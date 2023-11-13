@@ -12,9 +12,12 @@ public class Main {
     }
     
     public static void MAINPAGE() throws IOException {
+
         String input = "start";
+        
         while (!input.equals("e")) {
-            // Menu output
+
+            // menu output
             System.out.println();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
             System.out.println();
@@ -24,10 +27,10 @@ public class Main {
             System.out.println("   (2) Update the market info");
             System.out.println("   (e) Exit the program");
             System.out.println();
-            // Option input
-            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","e")));
+
+            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","e"))); // get input
             
-            // Navigation based on input
+            // navigation based on input
             switch(input) {
                 case "0":
                     System.out.println("moving to customer account login");

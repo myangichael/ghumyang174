@@ -24,7 +24,7 @@ public class Customer {
         return true;
     }
 
-    public ArrayList<MarketAccount> getAccounts() {
+    public ArrayList<MarketAccount> getMarketAccounts() {
         return new ArrayList<>();
     }
     
