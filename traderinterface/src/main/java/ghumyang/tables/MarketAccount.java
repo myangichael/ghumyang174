@@ -1,15 +1,28 @@
 package ghumyang.tables;
-
 import lombok.Getter;
 
-public class MarketAccount {
-    @Getter Integer id;
-    @Getter Double balance;
+import java.util.ArrayList;
 
-    // BEGIN TESTING
-    public MarketAccount(int n) {
-        id = n;
-        balance = Math.random() * 10000.0;
+import ghumyang.tables.stocks.StockAccount;
+import ghumyang.tables.transactions.Transaction;
+
+public class MarketAccount {
+
+    @Getter int customerId;
+    @Getter double balance;
+    @Getter ArrayList<StockAccount> stockAccounts;
+    @Getter ArrayList<Transaction> transactionHistory;
+
+    public MarketAccount(int customerId) {
+
     }
-    // END TESTING
+
+    public void deposit(double amount) {
+
+    }
+    
+    public void withdrawal(double amount) {
+
+    }
+
 }

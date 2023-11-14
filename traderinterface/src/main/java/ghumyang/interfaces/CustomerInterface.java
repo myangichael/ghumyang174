@@ -17,78 +17,27 @@ public class CustomerInterface {
         String[] loginInfo = Global.getLogin(); // prompt user for login info
 
         if (!Customer.checkLogin(loginInfo[0], loginInfo[1])) { // check login validity for customer
-            Global.clearScreen(); 
+            Global.clearScreen();
             System.out.println();
             System.out.println("---INVALID LOGIN INFO---"); // if invalid login info jump back
+            Global.awaitConfirmation();
             return;
         }
 
         Customer customer = new Customer(loginInfo[0], loginInfo[1]); // if valid login info continue to account page
-        AccountPage(customer);
+        MarketAccountPage(customer);
     }
 
-    // once successfully logged in, view account options
-    public static void AccountPage(Customer customer) throws IOException{
-        String input = "start";
-        
-        // TODO: replace list of all accounts associated with this customer and put here, function predefined as Customer.getMarketAccounts()
-        ArrayList<MarketAccount> marketAccountList = new ArrayList<>();
-
-        // BEGIN TESTING
-
-        MarketAccount temp1 = new MarketAccount(0);
-        MarketAccount temp2 = new MarketAccount(11);
-        MarketAccount temp3 = new MarketAccount(222);
-        marketAccountList.add(temp1);
-        marketAccountList.add(temp2);
-        marketAccountList.add(temp3);
-
-        // END TESTING
-
-        HashMap<String, MarketAccount> options = new HashMap<>(); // create mapping of all ids to their MarketAccounts
-        for (MarketAccount marketAccount : marketAccountList) {
-            options.put(String.valueOf(marketAccount.getId()), marketAccount);
-        }
-        options.put("e", null); // add option to exit
-
-        while (!input.equals("e")) {
-            Global.clearScreen();
-            System.out.println();
-            System.out.println(String.format("Welcome, %s", customer.getName()));
-            System.out.println();
-            System.out.println("Here is a list of your accounts: ");
-            System.out.println("   id | balance");
-
-            // for each MarketAccount associated with this Customer, output that MarketAccount's id and balance
-            for (MarketAccount marketAccount : marketAccountList) {
-                System.out.println(String.format("%5d | %10.2f", marketAccount.getId(), marketAccount.getBalance()));
-            }
-
-            System.out.println("Choose an account to take action in, or enter \"e\" to return home");
-            System.out.println();
-
-            input = Global.getLineSetInputs(new ArrayList<>((options.keySet()))); // get input
-
-            if (input.equals("e")) {
-                break; // exit condition
-            } else {
-                MarketAccountPage(customer, options.get(input)); // otherwise enter page for that Market Account
-            }
-        }
-
-        Global.clearScreen();
-        return;
-    }
-
-    public static void MarketAccountPage(Customer customer, MarketAccount marketAccount) throws IOException {
+    public static void MarketAccountPage(Customer customer) throws IOException {
 
         String input = "start";
 
         while (!input.equals("e")) {
-            
-            // hard coded options
+            MarketAccount marketAccount = new MarketAccount(customer.getCustomerId()); // load data from this Customer
+
+             // hard coded options
             Global.clearScreen();
-            System.out.println(String.format("Account ID: %d, total balance is: %1.2f", marketAccount.getId(), marketAccount.getBalance()));
+            System.out.println(String.format("Account ID: %d, total balance is: %1.2f", marketAccount.getCustomerId(), marketAccount.getBalance()));
             System.out.println();
             System.out.println("Options:");
             System.out.println("   (0) Make a deposit");
@@ -105,14 +54,24 @@ public class CustomerInterface {
             System.out.println("   (10) Display my user information");
             System.out.println("   (e) Exit");
             System.out.println();
+
             input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","8","9","10","e"))); // get input
 
             // TODO: add switch statement to handle input
-
-            if (!input.equals("e")) Global.awaitConfirmation();
+            switch (input) {
+                case "0":
+                    DepositHelper(marketAccount);
+                    break;
+            }
         }
-
+        
         return;
     }
-    
+
+    static void DepositHelper(MarketAccount marketAccount) throws IOException {
+        HashMap<String,String> fields = Global.promptValues("Deposit", new ArrayList<>(Arrays.asList("amount")));
+        Global.confirmInfo("Deposit", fields);
+        marketAccount.deposit(Integer.valueOf(fields.get("amount")));
+    }
+
 }

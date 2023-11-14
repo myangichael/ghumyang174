@@ -18,6 +18,7 @@ public class Main {
         while (!input.equals("e")) {
 
             // menu output
+            Global.clearScreen();
             System.out.println();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
             System.out.println();
