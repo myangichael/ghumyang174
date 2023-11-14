@@ -2,7 +2,6 @@ package ghumyang.tables;
 import lombok.Getter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class Customer {
 
@@ -13,19 +12,15 @@ public class Customer {
     @Getter String taxID;
     @Getter String username;
     @Getter String password;
-    @Getter String customerId;
+    @Getter int customerId;
 
     public Customer(String username, String password) {
-        name = "deez nuts";
+        name = "placeholder";
     }
 
     public static boolean checkLogin(String username, String password) throws IOException {
         // TODO: check DB for SQL entry containing this loginInfo pair
         return true;
-    }
-
-    public ArrayList<MarketAccount> getMarketAccounts() {
-        return new ArrayList<>();
     }
     
 }
