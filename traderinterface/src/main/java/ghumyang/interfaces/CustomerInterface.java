@@ -47,15 +47,11 @@ public class CustomerInterface {
             System.out.println("   (4) Cancel a transaction");
             System.out.println("   (5) Show balance");
             System.out.println("   (6) Show this month's transaction history");
-            System.out.println("   (7) Get information about a stock");
-            System.out.println("   (8) Get information about a movie");
-            System.out.println("   (8) List top movies within a time period");
-            System.out.println("   (9) Display reviews for a movie");
-            System.out.println("   (10) Display my user information");
+            System.out.println("   (7) Display my user information");
             System.out.println("   (e) Exit");
             System.out.println();
 
-            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","8","9","10","e"))); // get input
+            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","e"))); // get input
 
             // TODO: add switch statement to handle input
             switch (input) {
@@ -65,12 +61,12 @@ public class CustomerInterface {
             }
         }
         
-        return;
     }
 
     static void DepositHelper(MarketAccount marketAccount) throws IOException {
         HashMap<String,String> fields = Global.promptValues("Deposit", new ArrayList<>(Arrays.asList("amount")));
         Global.confirmInfo("Deposit", fields);
+        Global.awaitConfirmation();
         marketAccount.deposit(Integer.valueOf(fields.get("amount")));
     }
 
