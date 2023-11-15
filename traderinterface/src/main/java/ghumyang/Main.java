@@ -25,11 +25,13 @@ public class Main {
             System.out.println("Options:");
             System.out.println("   (0) Login to a customer account");
             System.out.println("   (1) Login to a manager account");
-            System.out.println("   (2) Update the market info");
+            System.out.println("   (2) Register a new customer account");
+            System.out.println("   (3) Query general stokc and movie info");
+            System.out.println("   (4) Update the market info");
             System.out.println("   (e) Exit the program");
             System.out.println();
 
-            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","e"))); // get input
+            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","e"))); // get input
             
             // navigation based on input
             switch(input) {
@@ -39,8 +41,15 @@ public class Main {
                     break;
                 case "1":
                     System.out.println("moving to manager account login");
+                    
                     break;
                 case "2":
+                    System.out.println("moving to register new customer account");
+                    break;
+                case "3":
+                    System.out.println("moving to general queries");
+                    break;
+                case "4":
                     System.out.println("moving to update market info");
                     break;
             }
