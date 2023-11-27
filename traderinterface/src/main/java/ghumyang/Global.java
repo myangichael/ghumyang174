@@ -47,7 +47,7 @@ public class Global {
     // small helper to create confirmation screen
     public static void awaitConfirmation() throws IOException {
         System.out.println();
-        System.out.println("Press enter to head back");
+        System.out.println("Press enter to confirm");
         br.readLine();
     }
 
@@ -67,13 +67,42 @@ public class Global {
 
     // given HashMap of fields and values, allows user to confirm, try again, or abort.
     public static boolean confirmInfo(String title, HashMap<String,String> values) {
+
+        // below segment identifies proper spacing for displaying strings
+        int maxFieldLen = 0;
+        int maxValLen = 0;
+        for (Map.Entry<String,String> valueSet : values.entrySet()) {
+            maxFieldLen = Math.max(maxFieldLen, valueSet.getKey().length());
+            maxValLen = Math.max(maxValLen, valueSet.getValue().length());
+        }
+
         clearScreen();
         System.out.println(String.format("Are these the desired values for %s?", title));
         System.out.println();
         for (Map.Entry<String,String> valueSet : values.entrySet()) {
-            System.out.println(String.format("%10s | %10s", valueSet.getKey(), valueSet.getValue()));
+            System.out.println(String.format("%"+maxFieldLen+"s | %"+maxValLen+"s", valueSet.getKey(), valueSet.getValue()));
         }
         return true;
     }
+    
+
+    // clears screen, displays error message, awaits confirm
+    public static void errorMessage(String message) throws IOException {
+        Global.clearScreen();
+        System.out.println(message);
+        Global.awaitConfirmation();
+    }
+
+    // regex to check if string is int
+    public static boolean isInteger(String str) {
+        return str.matches("^-?(0|[1-9]\\d*)$");
+    }
+
+    // regex to check if string is double
+    public static boolean isDouble(String str) {
+        return str.matches("^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$");
+    }
+
+
     
 }
