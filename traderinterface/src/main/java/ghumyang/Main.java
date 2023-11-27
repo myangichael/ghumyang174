@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import ghumyang.interfaces.CustomerInterface;
+import ghumyang.interfaces.ManagerInterface;
+import ghumyang.interfaces.NewCustomerInterface;
 
 public class Main {
     public static void main(String args[]) throws IOException {
@@ -41,10 +43,11 @@ public class Main {
                     break;
                 case "1":
                     System.out.println("moving to manager account login");
-                    
+                    ManagerInterface.Login();
                     break;
                 case "2":
                     System.out.println("moving to register new customer account");
+                    NewCustomerInterface.Register();
                     break;
                 case "3":
                     System.out.println("moving to general queries");

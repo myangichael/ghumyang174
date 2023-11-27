@@ -25,4 +25,16 @@ public class MarketAccount {
 
     }
 
+    public void buyStock(String ticker, int count) {
+
+    }
+
+    public void sellStock(String ticker, int count) {
+
+    }
+
+    public void cancelTransaction(int transactionId) {
+
+    }
+
 }
