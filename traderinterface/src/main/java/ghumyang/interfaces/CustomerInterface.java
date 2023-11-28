@@ -3,7 +3,7 @@ package ghumyang.interfaces;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import ghumyang.Global;
 import ghumyang.tables.Customer;
@@ -19,7 +19,7 @@ public class CustomerInterface {
         if (!Customer.checkLogin(loginInfo[0], loginInfo[1])) { // check login validity for customer
             Global.clearScreen();
             System.out.println();
-            System.out.println("---INVALID LOGIN INFO---"); // if invalid login info jump back
+            System.out.println("Submitted Login Info is Invalid :("); // if invalid login info jump back
             Global.awaitConfirmation();
             return;
         }
@@ -50,7 +50,7 @@ public class CustomerInterface {
             System.out.println("   (5) Show balance");
             System.out.println("   (6) Show this month's transaction history");
             System.out.println("   (7) Display my user information");
-            System.out.println("   (e) Exit / Log Out");
+            System.out.println("   (e) Exit to main menu / Log Out");
             System.out.println();
 
             input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","e"))); // get input
@@ -69,17 +69,28 @@ public class CustomerInterface {
                 case "3":
                     sellStock(marketAccount);
                     break;
+                case "4":
+                    cancelTransaction(marketAccount);
+                    break;
+                case "5":
+                    showBalance(marketAccount);
+                    break;
+                case "6":
+                    monthTransactionHistory(marketAccount);
+                    break;
+                case "7":
+                    displayInfo(marketAccount);
+                    break;
             }
         }
-        
     }
 
     static void deposit(MarketAccount marketAccount) throws IOException {
         String title = "Deposit";
-        HashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
         Global.confirmInfo(title, fields);
         Global.awaitConfirmation();
-        if (!Global.isDouble(fields.get("Amount"))) {
+        if (fields.get("Amount").equals("") || !Global.isDouble(fields.get("Amount"))) {
             Global.errorMessage("Inputted amount is invalid");
             return;
         }
@@ -88,7 +99,7 @@ public class CustomerInterface {
 
     static void withdrawal(MarketAccount marketAccount) throws IOException {
         String title = "Withdrawal";
-        HashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
         Global.confirmInfo(title, fields);
         Global.awaitConfirmation();
         if (!Global.isDouble(fields.get("Amount"))) {
@@ -100,7 +111,7 @@ public class CustomerInterface {
 
     static void buyStock(MarketAccount marketAccount) throws IOException {
         String title = "Buy Stock";
-        HashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
         Global.confirmInfo(title, fields);
         Global.awaitConfirmation();
         if (!Global.isInteger(fields.get("Count"))) {
@@ -112,7 +123,7 @@ public class CustomerInterface {
 
     static void sellStock(MarketAccount marketAccount) throws IOException {
         String title = "Sell Stock";
-        HashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
         Global.confirmInfo(title, fields);
         Global.awaitConfirmation();
         if (!Global.isInteger(fields.get("Count"))) {
@@ -124,11 +135,11 @@ public class CustomerInterface {
 
     static void cancelTransaction(MarketAccount marketAccount) throws IOException {
         String title = "Withdrawal";
-        HashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("TransactionId")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("TransactionId")));
         Global.confirmInfo(title, fields);
         Global.awaitConfirmation();
         if (!Global.isInteger(fields.get("TransactionId"))) {
-            Global.errorMessage("Inputted count is invalid");
+            Global.errorMessage("Inputted TransactionId is invalid");
             return;
         }
         marketAccount.cancelTransaction(Integer.valueOf(fields.get("TransactionId")));
@@ -140,7 +151,7 @@ public class CustomerInterface {
     }
 
     static void monthTransactionHistory(MarketAccount marketAccount) throws IOException {
-
+        System.out.println("This current month's transaction history is listed below: ");
     }
 
     static void displayInfo(MarketAccount marketAccount) throws IOException {
