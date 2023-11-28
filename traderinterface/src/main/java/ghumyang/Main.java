@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import ghumyang.interfaces.CustomerInterface;
+import ghumyang.interfaces.GeneralInterface;
 import ghumyang.interfaces.ManagerInterface;
 import ghumyang.interfaces.NewCustomerInterface;
 
@@ -21,14 +22,13 @@ public class Main {
 
             // menu output
             Global.clearScreen();
-            System.out.println();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
             System.out.println();
             System.out.println("Options:");
             System.out.println("   (0) Login to a customer account");
             System.out.println("   (1) Login to a manager account");
             System.out.println("   (2) Register a new customer account");
-            System.out.println("   (3) Query general stokc and movie info");
+            System.out.println("   (3) Query general stock and movie info");
             System.out.println("   (4) Update the market info");
             System.out.println("   (e) Exit the program");
             System.out.println();
@@ -51,6 +51,7 @@ public class Main {
                     break;
                 case "3":
                     System.out.println("moving to general queries");
+                    GeneralInterface.GeneralQueryPage();
                     break;
                 case "4":
                     System.out.println("moving to update market info");

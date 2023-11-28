@@ -9,6 +9,10 @@ public class Manager {
     @Getter String username;
     @Getter String password;
 
+    public Manager(String username, String password) {
+
+    }
+
     public static boolean checkLogin(String username, String password) throws IOException {
         // TODO: check DB for SQL entry containing this loginInfo pair
         return true;

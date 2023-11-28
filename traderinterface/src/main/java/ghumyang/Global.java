@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Global {
@@ -52,10 +52,10 @@ public class Global {
     }
 
     // prompts the user for the given list of fields, then returns a HashMap of those values.
-    public static HashMap<String,String> promptValues(String title, ArrayList<String> fields) throws IOException {
+    public static LinkedHashMap<String,String> promptValues(String title, ArrayList<String> fields) throws IOException {
         clearScreen();
         System.out.println(String.format("Enter the following info for %s", title));
-        HashMap<String,String> values = new HashMap<>();
+        LinkedHashMap<String,String> values = new LinkedHashMap<>();
         for (String field : fields) {
             System.out.println();
             System.out.println(String.format("Enter %s", field));
@@ -66,11 +66,11 @@ public class Global {
     }
 
     // given HashMap of fields and values, allows user to confirm, try again, or abort.
-    public static boolean confirmInfo(String title, HashMap<String,String> values) {
+    public static boolean confirmInfo(String title, LinkedHashMap<String,String> values) {
 
         // below segment identifies proper spacing for displaying strings
-        int maxFieldLen = 0;
-        int maxValLen = 0;
+        int maxFieldLen = 1;
+        int maxValLen = 1;
         for (Map.Entry<String,String> valueSet : values.entrySet()) {
             maxFieldLen = Math.max(maxFieldLen, valueSet.getKey().length());
             maxValLen = Math.max(maxValLen, valueSet.getValue().length());
@@ -95,11 +95,17 @@ public class Global {
 
     // regex to check if string is int
     public static boolean isInteger(String str) {
+        if (str.equals("")) {
+            return false;
+        }
         return str.matches("^-?(0|[1-9]\\d*)$");
     }
 
     // regex to check if string is double
     public static boolean isDouble(String str) {
+        if (str.equals("")) {
+            return false;
+        }
         return str.matches("^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$");
     }
 
