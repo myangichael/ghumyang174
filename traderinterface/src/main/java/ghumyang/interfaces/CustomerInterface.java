@@ -28,7 +28,7 @@ public class CustomerInterface {
         MarketAccountPage(customer);
     }
 
-    public static void MarketAccountPage(Customer customer) throws IOException {
+    static void MarketAccountPage(Customer customer) throws IOException {
 
         String input = "start";
 

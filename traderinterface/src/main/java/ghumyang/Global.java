@@ -13,8 +13,8 @@ public class Global {
     // input Reader for Global use
     public static BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
     // Date and Market Open variables
-    public static Date date = Date.valueOf("2000-1-1");
-    public static boolean marketOpen = false;
+    public static Date CURRENT_DATE = Date.valueOf("2000-1-1");
+    public static boolean MARKET_IS_OPEN = false;
 
     // prompts user input, forces user to input one of the Strings listed in validInputs or calls for input again, then returns that input
     public static String getLineSetInputs(ArrayList<String> validInputs) throws IOException {
@@ -90,6 +90,15 @@ public class Global {
     public static void errorMessage(String message) throws IOException {
         Global.clearScreen();
         System.out.println(message);
+        Global.awaitConfirmation();
+    }
+
+    // overloaded version for multiple messages
+    public static void errorMessage(String[] messages) throws IOException {
+        Global.clearScreen();
+        for (String message : messages) {
+            System.out.println(message);
+        }
         Global.awaitConfirmation();
     }
 

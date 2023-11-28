@@ -10,6 +10,7 @@ import ghumyang.interfaces.NewCustomerInterface;
 
 public class Main {
     public static void main(String args[]) throws IOException {
+        
         Global.clearScreen();
         MAINPAGE();
     }

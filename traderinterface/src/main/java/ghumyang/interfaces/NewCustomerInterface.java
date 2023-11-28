@@ -32,7 +32,7 @@ public class NewCustomerInterface {
             errorMessages.add("Email should be of form \"a@b.c\"");
         }
         if (!fields.get("TaxID").matches("^\\d\\d\\d\\d\\d\\d\\d\\d\\d$")) {
-            errorMessages.add("TaxID should be a 9 digit number, example: \"123456789\"");
+            errorMessages.add("TaxID should be a 9 digit string, example: \"123456789\"");
         }
         if (!placeHolder) {
             errorMessages.add("this username is not unique");
