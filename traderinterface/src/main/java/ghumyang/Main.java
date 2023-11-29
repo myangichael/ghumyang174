@@ -3,6 +3,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import java.sql.SQLException;
 import ghumyang.interfaces.CustomerInterface;
 import ghumyang.interfaces.GeneralInterface;
 import ghumyang.interfaces.ManagerInterface;
@@ -10,13 +11,15 @@ import ghumyang.interfaces.MarketInfoInterface;
 import ghumyang.interfaces.NewCustomerInterface;
 
 public class Main {
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, SQLException {
         Global.clearScreen();
-        // TODO: Add function to query for current date in database
-        MAINPAGE();
+        Global.getPassword();
+        Global.connection();
+        Global.loadMarketInfo();
+        MainPage();
     }
     
-    public static void MAINPAGE() throws IOException {
+    public static void MainPage() throws IOException, SQLException {
 
         String input = "start";
         
@@ -25,6 +28,7 @@ public class Main {
             // menu output
             Global.clearScreen();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
+            System.out.println();
             System.out.println("The current date is: " + Global.CURRENT_DATE.toString());
             if (Global.MARKET_IS_OPEN) System.out.println("The market is currently OPEN");
             else System.out.println("The market is currently CLOSED");
