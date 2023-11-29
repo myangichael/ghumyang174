@@ -1,12 +1,22 @@
 package ghumyang;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+
+import oracle.jdbc.pool.OracleDataSource;
+import oracle.jdbc.OracleConnection;
+import java.sql.DatabaseMetaData;
 
 public class Global {
 
@@ -16,9 +26,98 @@ public class Global {
     public static Date CURRENT_DATE = Date.valueOf("2000-1-1");
     public static boolean MARKET_IS_OPEN = false;
 
+    // variables for DB connection
+    public static String DB_URL;
+    public static String DB_USER;
+    public static String DB_PASSWORD;
+    
+    // instantiating connection
+    public static Properties info;
+    public static OracleDataSource ods;
+    public static OracleConnection connection;
+
+    // function to pull password from file
+    public static void getPassword() throws IOException {
+        BufferedReader pReader = new BufferedReader(new FileReader(".login"));
+        DB_URL = pReader.readLine();
+        DB_USER = pReader.readLine();
+        DB_PASSWORD = pReader.readLine();
+        pReader.close();
+    }
+
+    // function to create connection on program run, copied from course tutorial
+    public static void connection() throws SQLException {
+
+        info = new Properties();
+
+        System.out.println("starting connection...");
+        info.put(OracleConnection.CONNECTION_PROPERTY_USER_NAME, Global.DB_USER);
+        info.put(OracleConnection.CONNECTION_PROPERTY_PASSWORD, Global.DB_PASSWORD);
+        info.put(OracleConnection.CONNECTION_PROPERTY_DEFAULT_ROW_PREFETCH, "20");
+        System.out.println("creating oracleDataSource...");
+
+        ods = new OracleDataSource();
+        ods.setURL(Global.DB_URL);
+        ods.setConnectionProperties(info);
+        connection = (OracleConnection) ods.getConnection();
+
+        System.out.println("Connection established!");
+        // Get JDBC driver name and version
+        DatabaseMetaData dbmd = connection.getMetaData();
+        System.out.println("Driver Name: " + dbmd.getDriverName());
+        System.out.println("Driver Version: " + dbmd.getDriverVersion());
+        // Print some connection properties
+        System.out.println(
+            "Default Row Prefetch Value: " + connection.getDefaultRowPrefetch()
+        );
+        System.out.println("Database username: " + connection.getUserName());
+        System.out.println();
+        // Perform some database operations
+    }
+
+
     // any time a query is submit to update the date or the market open status, this should be called
     public static void loadMarketInfo() {
-        
+
+        // query for market open status
+        try (Statement statement = Global.connection.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT is_open FROM openclose" 
+                    )
+                )
+            ) {
+                resultSet.next();
+                int isOpen = Integer.parseInt(resultSet.getString("is_open"));
+                if (isOpen == 1) {
+                    MARKET_IS_OPEN = true;
+                } else {
+                    MARKET_IS_OPEN = false;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: retrieving market open status");
+            System.exit(1);
+        }
+
+        // query for date
+        try (Statement statement = Global.connection.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT TO_CHAR(M.market_date, 'YYYY-MM-DD') AS market_date FROM marketdate M" 
+                    )
+                )
+            ) {
+                resultSet.next();
+                CURRENT_DATE = Date.valueOf(resultSet.getString("market_date"));
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: retrieving date");
+            System.exit(1);
+        }
+
     }
 
     // prompts user input, forces user to input one of the Strings listed in validInputs or calls for input again, then returns that input

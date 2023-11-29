@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 
 import ghumyang.Global;
 import ghumyang.tables.Customer;
-import ghumyang.tables.MarketAccount;
 
 public class CustomerInterface {
 
@@ -18,32 +17,31 @@ public class CustomerInterface {
         String[] loginInfo = Global.getLogin();
 
         // validate login
-        if (!Customer.checkLogin(loginInfo[0], loginInfo[1])) {
+        if (!Customer.isThereUserWithThisLogin(loginInfo[0], loginInfo[1])) {
             Global.messageWithConfirm("ERROR: customer login info is invalid :(");
             return;
         }
 
         // if valid login info continue to account page
-        Customer customer = new Customer(loginInfo[0], loginInfo[1]);
-        MarketAccountPage(customer);
+        MarketAccountPage(loginInfo[0], loginInfo[1]);
     }
 
     // landing page for managing customer account
-    static void MarketAccountPage(Customer customer) throws IOException {
+    static void MarketAccountPage(String username, String password) throws IOException {
 
         String input = "start";
 
         // generic input loop, will loop user commands until user exits
         while (!input.equals("e")) {
 
-            // reload data from this market account every loop
-            MarketAccount marketAccount = new MarketAccount(customer.getCustomerId()); 
+            // reload data from this customer and market account every loop
+            Customer customer = new Customer(username, password);
 
             // hard coded options and switch statements for navigation
             Global.clearScreen();
             System.out.println("Welcome, " + customer.getName() + "!");
             System.out.println();
-            System.out.println(String.format("Account ID: %d, total balance is: %1.2f", marketAccount.getCustomerId(), marketAccount.getBalance()));
+            System.out.println(String.format("Account ID: %d, total balance is: %1.2f", customer.getCustomer_id(), customer.getBalance()));
             System.out.println();
             System.out.println("Options:");
             System.out.println("   (0) Make a deposit");
@@ -59,25 +57,25 @@ public class CustomerInterface {
             input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","e")));
             switch (input) {
                 case "0":
-                    deposit(marketAccount);
+                    deposit(customer);
                     break;
                 case "1":
-                    withdrawal(marketAccount);
+                    withdrawal(customer);
                     break;
                 case "2":
-                    buyStock(marketAccount);
+                    buyStock(customer);
                     break;
                 case "3":
-                    sellStock(marketAccount);
+                    sellStock(customer);
                     break;
                 case "4":
-                    cancelTransaction(marketAccount);
+                    cancelTransaction(customer);
                     break;
                 case "5":
-                    showBalance(marketAccount);
+                    showBalance(customer);
                     break;
                 case "6":
-                    monthTransactionHistory(marketAccount);
+                    monthTransactionHistory(customer);
                     break;
                 case "7":
                     displayInfo(customer);
@@ -86,7 +84,7 @@ public class CustomerInterface {
         }
     }
 
-    static void deposit(MarketAccount marketAccount) throws IOException {
+    static void deposit(Customer customer) throws IOException {
         String title = "Deposit";
 
         // prompt for deposit amount
@@ -98,10 +96,18 @@ public class CustomerInterface {
             return;
         }
 
+        double amount = Double.valueOf(fields.get("Amount"));
+
+        if (amount < 0) {
+            Global.messageWithConfirm("ERROR: cannot deposit negative money");
+            return;
+        }
+
         // deposit query
+        customer.deposit(Double.parseDouble(fields.get("Amount")));
     }
 
-    static void withdrawal(MarketAccount marketAccount) throws IOException {
+    static void withdrawal(Customer customer) throws IOException {
         String title = "Withdrawal";
 
         // prompt for withdrawal amount
@@ -113,15 +119,25 @@ public class CustomerInterface {
             return;
         }
 
+        double amount = Double.valueOf(fields.get("Amount"));
+
         // ensure there is enough balance to withdraw this amount
-        if (marketAccount.getBalance() < Double.valueOf(fields.get("Amount"))) {
+        if (customer.getBalance() < amount) {
             Global.messageWithConfirm("ERROR: not enough money to withdraw");
+            return;
+        }
+
+        // ensure value is not negative
+        if (amount < 0) {
+            Global.messageWithConfirm("ERROR: cannot withdraw negative money");
+            return;
         }
 
         // withdraw query
+        customer.withdrawal(Double.parseDouble(fields.get("Amount")));
     }
 
-    static void buyStock(MarketAccount marketAccount) throws IOException {
+    static void buyStock(Customer customer) throws IOException {
 
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
@@ -150,7 +166,7 @@ public class CustomerInterface {
         // buy query
     }
 
-    static void sellStock(MarketAccount marketAccount) throws IOException {
+    static void sellStock(Customer customer) throws IOException {
 
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
@@ -167,8 +183,8 @@ public class CustomerInterface {
             Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
             return;
         }
-        if (!Global.isInteger(fields.get("Purchased Price"))) {
-            Global.messageWithConfirm("ERROR: inputted purchase price is invalid, should be an INTEGER");
+        if (!Global.isDouble(fields.get("Purchased Price"))) {
+            Global.messageWithConfirm("ERROR: inputted purchase price is invalid, should be a DOUBLE");
             return;
         }
         if (fields.get("Ticker").equals("")) {
@@ -183,7 +199,7 @@ public class CustomerInterface {
         // sell query
     }
 
-    static void cancelTransaction(MarketAccount marketAccount) throws IOException {
+    static void cancelTransaction(Customer customer) throws IOException {
 
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
@@ -208,13 +224,13 @@ public class CustomerInterface {
         // cancel transaction
     }
 
-    static void showBalance(MarketAccount marketAccount) throws IOException {
+    static void showBalance(Customer customer) throws IOException {
         // prints balance across all stock accounts belonging to this market account from query
-        System.out.println("YOUR BALANCE IS: " + marketAccount.getBalance());
+        System.out.println("YOUR BALANCE IS: " + customer.getBalance());
         Global.awaitConfirmation();
     }
 
-    static void monthTransactionHistory(MarketAccount marketAccount) throws IOException {
+    static void monthTransactionHistory(Customer customer) throws IOException {
         // prints all transactions of this month from query
         System.out.println("This current month's transaction history is listed below: ");
     }
@@ -226,12 +242,12 @@ public class CustomerInterface {
             "",
             "         Name | " + customer.getName(),
             "        State | " + customer.getState(),
-            " Phone Number | " + customer.getPhoneNumber(),
-            "Email Address | " + customer.getEmailAddress(),
-            "       Tax ID | " + customer.getTaxID(),
+            " Phone Number | " + customer.getPhone_number(),
+            "Email Address | " + customer.getEmail_address(),
+            "       Tax ID | " + customer.getTax_id(),
             "     Username | " + customer.getUsername(),
             "     Password | " + customer.getPassword(),
-            "  Customer ID | " + String.valueOf(customer.getCustomerId())
+            "  Customer ID | " + String.valueOf(customer.getCustomer_id())
         };
         Global.messageWithConfirm(userInfo);
     }
