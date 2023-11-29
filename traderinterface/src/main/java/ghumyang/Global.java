@@ -26,15 +26,17 @@ public class Global {
     public static Date CURRENT_DATE = Date.valueOf("2000-1-1");
     public static boolean MARKET_IS_OPEN = false;
 
-    // variables for DB connection
-    public static String DB_URL;
-    public static String DB_USER;
-    public static String DB_PASSWORD;
+    // login variables for DB connection
+    static String DB_URL;
+    static String DB_USER;
+    static String DB_PASSWORD;
     
     // instantiating connection
-    public static Properties info;
-    public static OracleDataSource ods;
-    public static OracleConnection connection;
+    static Properties info;
+    static OracleDataSource ods;
+    
+    // use connection to make all sql queries
+    public static OracleConnection SQL;
 
     // function to pull password from file
     public static void getPassword() throws IOException {
@@ -51,26 +53,26 @@ public class Global {
         info = new Properties();
 
         System.out.println("starting connection...");
-        info.put(OracleConnection.CONNECTION_PROPERTY_USER_NAME, Global.DB_USER);
-        info.put(OracleConnection.CONNECTION_PROPERTY_PASSWORD, Global.DB_PASSWORD);
+        info.put(OracleConnection.CONNECTION_PROPERTY_USER_NAME, DB_USER);
+        info.put(OracleConnection.CONNECTION_PROPERTY_PASSWORD, DB_PASSWORD);
         info.put(OracleConnection.CONNECTION_PROPERTY_DEFAULT_ROW_PREFETCH, "20");
         System.out.println("creating oracleDataSource...");
 
         ods = new OracleDataSource();
-        ods.setURL(Global.DB_URL);
+        ods.setURL(DB_URL);
         ods.setConnectionProperties(info);
-        connection = (OracleConnection) ods.getConnection();
+        SQL = (OracleConnection) ods.getConnection();
 
         System.out.println("Connection established!");
         // Get JDBC driver name and version
-        DatabaseMetaData dbmd = connection.getMetaData();
+        DatabaseMetaData dbmd = SQL.getMetaData();
         System.out.println("Driver Name: " + dbmd.getDriverName());
         System.out.println("Driver Version: " + dbmd.getDriverVersion());
         // Print some connection properties
         System.out.println(
-            "Default Row Prefetch Value: " + connection.getDefaultRowPrefetch()
+            "Default Row Prefetch Value: " + SQL.getDefaultRowPrefetch()
         );
-        System.out.println("Database username: " + connection.getUserName());
+        System.out.println("Database username: " + SQL.getUserName());
         System.out.println();
         // Perform some database operations
     }
@@ -80,7 +82,7 @@ public class Global {
     public static void loadMarketInfo() {
 
         // query for market open status
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -102,7 +104,7 @@ public class Global {
         }
 
         // query for date
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -118,6 +120,13 @@ public class Global {
             System.exit(1);
         }
 
+    }
+
+    public static void printMarketInfo() {
+        System.out.println("The current date is: " + Global.CURRENT_DATE.toString());
+        if (Global.MARKET_IS_OPEN) System.out.println("The market is currently OPEN");
+        else System.out.println("The market is currently CLOSED");
+        System.out.println();
     }
 
     // prompts user input, forces user to input one of the Strings listed in validInputs or calls for input again, then returns that input
@@ -210,6 +219,17 @@ public class Global {
         Global.awaitConfirmation();
     }
 
+    // overloaded version for table outputs
+    public static void messageWithConfirm(String bonusMessage, String[] messages) throws IOException {
+        Global.clearScreen();
+        System.out.println(bonusMessage);
+        System.out.println();
+        for (String message : messages) {
+            System.out.println(message);
+        }
+        Global.awaitConfirmation();
+    }
+
     // regex to check if string is int
     public static boolean isInteger(String str) {
         if (str.equals("")) {
@@ -224,6 +244,61 @@ public class Global {
             return false;
         }
         return str.matches("^(-?)(0|([1-9][0-9]*))(\\.[0-9]+)?$");
+    }
+
+    // converts query results to integer
+    public static String[] tableToString(ArrayList<String> headers, ArrayList<ArrayList<String>> values) {
+
+        // ensure sizing is the same
+        if (headers.size() != values.size()) {
+            System.out.println("bad table to string request: column count inconsistent");
+            System.exit(1);
+        }
+
+        // ensure all columns of equal length
+        int rowCount = values.get(0).size();
+        for (ArrayList<String> column : values) {
+            if (column.size() != rowCount) {
+                System.out.println("bad table to string request: column sizes inconsistent");
+                System.exit(1);
+            }
+        }
+
+        // stores max length of items in a given column
+        ArrayList<Integer> columnlength = new ArrayList<>();
+
+        // for every column, determine item of maximum length for formatting
+        for (int i = 0; i < headers.size(); i++) {
+            int maxLength = headers.get(i).length();
+            for (String value : values.get(i)) {
+                maxLength = Math.max(maxLength, value.length());
+            }
+            columnlength.add(maxLength);
+        }
+
+        // create array of strings where each string represents a row
+        String[] finalOutput = new String[values.get(0).size()+2];
+        
+        // create first header row
+        StringBuilder sb = new StringBuilder("");
+        sb.append("| ");
+        for (int i = 0; i < headers.size(); i++) {
+            sb.append(String.format("%-"+columnlength.get(i)+"s | ", headers.get(i)));
+        }
+        finalOutput[0] = sb.toString();
+        finalOutput[1] = "";
+
+        // creating each subsequent row
+        for (int i = 0; i < values.get(0).size(); i++) {
+            StringBuilder sb2 = new StringBuilder("");
+            sb2.append("| ");
+            for (int j = 0; j < headers.size(); j++) {
+                sb2.append(String.format("%-"+columnlength.get(j)+"s | ", values.get(j).get(i)));
+            }
+            finalOutput[i+2] = sb2.toString();
+        }
+
+        return finalOutput;
     }
     
 }

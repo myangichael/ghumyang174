@@ -54,6 +54,9 @@ public class NewCustomerInterface {
         if (usernameAlreadyExists(username)) {
             errorMessages.add("username has to be unique");
         }
+        if (username.equals("")) {
+            errorMessages.add("username cannot be empty");
+        }
         if (password.equals("")) {
             errorMessages.add("password cannot be empty");
         }
@@ -74,7 +77,7 @@ public class NewCustomerInterface {
     }
 
     static boolean usernameAlreadyExists(String username) throws SQLException {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format("SELECT * FROM Customers C WHERE C.username = '%s'", username)
@@ -89,14 +92,14 @@ public class NewCustomerInterface {
                 }
             }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: registration check unique username");
+            System.out.println("FAILED QUERY: usernameAlreadyExists");
             System.exit(1);
         }
         return true;
     }
 
     static void addUser(String username, String password, String name, String state, String phone_number, String email_address, String tax_id) throws SQLException {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -106,7 +109,7 @@ public class NewCustomerInterface {
                 )
             ) {}
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: registration add user");
+            System.out.println("FAILED QUERY: addUser");
             System.exit(1);
         }
     }

@@ -86,19 +86,19 @@ public class ManagerInterface {
             );   
             return;
         }
-        
+        // TODO
     }
 
     static void generateMonthlyStatement() throws IOException {
-
+        // TODO
     }
 
     static void listActiveCustomers() throws IOException {
-        
+        // TODO
     }
 
     static void generateGDTEReport() throws IOException {
-        
+        // TODO
     }
 
     static void generateCustomerReport() throws IOException {
@@ -108,10 +108,11 @@ public class ManagerInterface {
             Global.messageWithConfirm("ERROR: inputted username is empty");
             return;
         }
+        // TODO
     }
 
     static void deleteAllTransactions() throws IOException {
-
+        // TODO
     }
 
 }
