@@ -12,8 +12,6 @@ public class NewCustomerInterface {
         String title = "your New User";
         String[] fieldsList = new String[] {"Name","State","Phone Number","Email","TaxID","Username","Password"};
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList(fieldsList)));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
 
         ArrayList<String> errorMessages = new ArrayList<>();
         boolean placeHolder = false;
@@ -43,7 +41,7 @@ public class NewCustomerInterface {
         
         if (errorMessages.size() > 0) {
             Global.clearScreen();
-            System.out.println("Account was not successfully created. Errors below:");
+            System.out.println("Account was NOT successfully created. Errors below:");
             System.out.println();
             for (String message : errorMessages) {
                 System.out.println(message);

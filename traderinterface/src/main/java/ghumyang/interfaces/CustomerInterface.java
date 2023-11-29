@@ -14,28 +14,32 @@ public class CustomerInterface {
     // initial landing page to login to customer account
     public static void Login() throws IOException {
 
-        String[] loginInfo = Global.getLogin(); // prompt user for login info
+        // prompt user for login info
+        String[] loginInfo = Global.getLogin();
 
-        if (!Customer.checkLogin(loginInfo[0], loginInfo[1])) { // check login validity for customer
-            Global.clearScreen();
-            System.out.println();
-            System.out.println("Submitted Login Info is Invalid :("); // if invalid login info jump back
-            Global.awaitConfirmation();
+        // validate login
+        if (!Customer.checkLogin(loginInfo[0], loginInfo[1])) {
+            Global.messageWithConfirm("ERROR: customer login info is invalid :(");
             return;
         }
 
-        Customer customer = new Customer(loginInfo[0], loginInfo[1]); // if valid login info continue to account page
+        // if valid login info continue to account page
+        Customer customer = new Customer(loginInfo[0], loginInfo[1]);
         MarketAccountPage(customer);
     }
 
+    // landing page for managing customer account
     static void MarketAccountPage(Customer customer) throws IOException {
 
         String input = "start";
 
+        // generic input loop, will loop user commands until user exits
         while (!input.equals("e")) {
-            MarketAccount marketAccount = new MarketAccount(customer.getCustomerId()); // load data from this Customer
 
-             // hard coded options
+            // reload data from this market account every loop
+            MarketAccount marketAccount = new MarketAccount(customer.getCustomerId()); 
+
+            // hard coded options and switch statements for navigation
             Global.clearScreen();
             System.out.println("Welcome, " + customer.getName() + "!");
             System.out.println();
@@ -52,10 +56,7 @@ public class CustomerInterface {
             System.out.println("   (7) Display my user information");
             System.out.println("   (e) Exit to main menu / Log Out");
             System.out.println();
-
-            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","e"))); // get input
-
-            // TODO: add switch statement to handle input
+            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","6","7","e")));
             switch (input) {
                 case "0":
                     deposit(marketAccount);
@@ -79,7 +80,7 @@ public class CustomerInterface {
                     monthTransactionHistory(marketAccount);
                     break;
                 case "7":
-                    displayInfo(marketAccount);
+                    displayInfo(customer);
                     break;
             }
         }
@@ -87,75 +88,152 @@ public class CustomerInterface {
 
     static void deposit(MarketAccount marketAccount) throws IOException {
         String title = "Deposit";
+
+        // prompt for deposit amount
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
-        if (fields.get("Amount").equals("") || !Global.isDouble(fields.get("Amount"))) {
-            Global.errorMessage("Inputted amount is invalid");
+
+        // input validation
+        if (!Global.isDouble(fields.get("Amount"))) {
+            Global.messageWithConfirm("ERROR: inputted amount is invalid, should be a DECIMAL NUMBER");
             return;
         }
-        marketAccount.deposit(Double.valueOf(fields.get("Amount")));
+
+        // deposit query
     }
 
     static void withdrawal(MarketAccount marketAccount) throws IOException {
         String title = "Withdrawal";
+
+        // prompt for withdrawal amount
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Amount")));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
+
+        // input validation
         if (!Global.isDouble(fields.get("Amount"))) {
-            Global.errorMessage("Inputted amount is invalid");
+            Global.messageWithConfirm("ERROR: inputted amount is invalid, should be a DECIMAL NUMBER");
             return;
         }
-        marketAccount.withdrawal(Double.valueOf(fields.get("Amount")));
+
+        // ensure there is enough balance to withdraw this amount
+        if (marketAccount.getBalance() < Double.valueOf(fields.get("Amount"))) {
+            Global.messageWithConfirm("ERROR: not enough money to withdraw");
+        }
+
+        // withdraw query
     }
 
     static void buyStock(MarketAccount marketAccount) throws IOException {
+
+        // ensure market is open
+        if (!Global.MARKET_IS_OPEN) {
+            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+        }
+
         String title = "Buy Stock";
+
+        // prompt for stock ticker, shares to buy
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
+
+        // input validation
         if (!Global.isInteger(fields.get("Count"))) {
-            Global.errorMessage("Inputted count is invalid");
+            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
             return;
         }
-        marketAccount.buyStock(fields.get("Ticker"), Integer.valueOf(fields.get("Count")));
+        if (fields.get("Ticker").equals("")) {
+            Global.messageWithConfirm("ERROR: Ticker is empty");
+            return;
+        }
+
+        // query stock info
+
+        // ensure there is enough balance to buy this many shares
+        
+        // buy query
     }
 
     static void sellStock(MarketAccount marketAccount) throws IOException {
+
+        // ensure market is open
+        if (!Global.MARKET_IS_OPEN) {
+            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+        }
+
         String title = "Sell Stock";
-        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
+
+        // prompt for stock ticker, shares to sell
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count","Purchased Price")));
+
+        // input validation
         if (!Global.isInteger(fields.get("Count"))) {
-            Global.errorMessage("Inputted count is invalid");
+            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
             return;
         }
-        marketAccount.sellStock(fields.get("Ticker"), Integer.valueOf(fields.get("Count")));
+        if (!Global.isInteger(fields.get("Purchased Price"))) {
+            Global.messageWithConfirm("ERROR: inputted purchase price is invalid, should be an INTEGER");
+            return;
+        }
+        if (fields.get("Ticker").equals("")) {
+            Global.messageWithConfirm("ERROR: Ticker is empty");
+            return;
+        }
+
+        // ensure that the user owns this stock at this purchase price
+
+        // ensure that the user has enough stock at this purchase price to sell
+
+        // sell query
     }
 
     static void cancelTransaction(MarketAccount marketAccount) throws IOException {
-        String title = "Withdrawal";
+
+        // ensure market is open
+        if (!Global.MARKET_IS_OPEN) {
+            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+        }
+
+        String title = "Cancel Transaction";
+
+        // prompt for transaction to cancel
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("TransactionId")));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
+
+        // input validation
         if (!Global.isInteger(fields.get("TransactionId"))) {
-            Global.errorMessage("Inputted TransactionId is invalid");
+            Global.messageWithConfirm("ERROR: inputted TransactionId is invalid, should be an INTEGER");
             return;
         }
-        marketAccount.cancelTransaction(Integer.valueOf(fields.get("TransactionId")));
+
+        // ensure this transaction exists
+
+        // ensure date is same
+        
+        // cancel transaction
     }
 
     static void showBalance(MarketAccount marketAccount) throws IOException {
+        // prints balance across all stock accounts belonging to this market account from query
         System.out.println("YOUR BALANCE IS: " + marketAccount.getBalance());
         Global.awaitConfirmation();
     }
 
     static void monthTransactionHistory(MarketAccount marketAccount) throws IOException {
+        // prints all transactions of this month from query
         System.out.println("This current month's transaction history is listed below: ");
     }
 
-    static void displayInfo(MarketAccount marketAccount) throws IOException {
-
+    static void displayInfo(Customer customer) throws IOException {
+        // prints below info
+        String[] userInfo = new String[] {
+            "Your Personal Information",
+            "",
+            "         Name | " + customer.getName(),
+            "        State | " + customer.getState(),
+            " Phone Number | " + customer.getPhoneNumber(),
+            "Email Address | " + customer.getEmailAddress(),
+            "       Tax ID | " + customer.getTaxID(),
+            "     Username | " + customer.getUsername(),
+            "     Password | " + customer.getPassword(),
+            "  Customer ID | " + String.valueOf(customer.getCustomerId())
+        };
+        Global.messageWithConfirm(userInfo);
     }
 
 }
