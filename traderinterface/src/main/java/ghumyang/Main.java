@@ -29,10 +29,7 @@ public class Main {
             Global.clearScreen();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
             System.out.println();
-            System.out.println("The current date is: " + Global.CURRENT_DATE.toString());
-            if (Global.MARKET_IS_OPEN) System.out.println("The market is currently OPEN");
-            else System.out.println("The market is currently CLOSED");
-            System.out.println();
+            Global.printMarketInfo();
             System.out.println("Options:");
             System.out.println("   (0) Login to a customer account");
             System.out.println("   (1) Login to a manager account");
@@ -70,7 +67,6 @@ public class Main {
         }
 
     }
-
     
 }
 

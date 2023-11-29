@@ -20,7 +20,7 @@ public class Customer {
     @Getter double balance;
 
     public Customer(String username, String password) {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -41,13 +41,13 @@ public class Customer {
                 this.balance = Double.parseDouble(resultSet.getString("balance"));
             }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: declare customer");
+            System.out.println("FAILED QUERY: declare Customer");
             System.exit(1);
         }
     }
 
     public static boolean isThereUserWithThisLogin(String username, String password) throws IOException {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -65,14 +65,15 @@ public class Customer {
                 }
             }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: check customer login");
+            System.out.println("FAILED QUERY: isThereUserWithThisLogin");
             System.exit(1);
         }
         return true;
     }
 
+    // query has no constraints, we assume all caught in application
     public void deposit(double amount) {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -82,13 +83,14 @@ public class Customer {
                 )
             ) { }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: customer deposit");
+            System.out.println("FAILED QUERY: deposit");
             System.exit(1);
         }
     }
     
+    // query has no constraints, we assume all caught in application
     public void withdrawal(double amount) {
-        try (Statement statement = Global.connection.createStatement()) {
+        try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
@@ -98,7 +100,7 @@ public class Customer {
                 )
             ) { }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: customer deposit");
+            System.out.println("FAILED QUERY: withdrawal");
             System.exit(1);
         }
     }

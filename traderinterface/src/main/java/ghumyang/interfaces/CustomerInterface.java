@@ -42,6 +42,9 @@ public class CustomerInterface {
             System.out.println("Welcome, " + customer.getName() + "!");
             System.out.println();
             System.out.println(String.format("Account ID: %d, total balance is: %1.2f", customer.getCustomer_id(), customer.getBalance()));
+
+            // TODO: SHOW CURRENT MARKET STATUS
+
             System.out.println();
             System.out.println("Options:");
             System.out.println("   (0) Make a deposit");
