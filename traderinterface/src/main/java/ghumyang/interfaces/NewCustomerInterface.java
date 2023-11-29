@@ -12,8 +12,6 @@ public class NewCustomerInterface {
         String title = "your New User";
         String[] fieldsList = new String[] {"Name","State","Phone Number","Email","TaxID","Username","Password"};
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList(fieldsList)));
-        Global.confirmInfo(title, fields);
-        Global.awaitConfirmation();
 
         ArrayList<String> errorMessages = new ArrayList<>();
         boolean placeHolder = false;
@@ -32,7 +30,7 @@ public class NewCustomerInterface {
             errorMessages.add("Email should be of form \"a@b.c\"");
         }
         if (!fields.get("TaxID").matches("^\\d\\d\\d\\d\\d\\d\\d\\d\\d$")) {
-            errorMessages.add("TaxID should be a 9 digit number, example: \"123456789\"");
+            errorMessages.add("TaxID should be a 9 digit string, example: \"123456789\"");
         }
         if (!placeHolder) {
             errorMessages.add("this username is not unique");
@@ -43,7 +41,7 @@ public class NewCustomerInterface {
         
         if (errorMessages.size() > 0) {
             Global.clearScreen();
-            System.out.println("Account was not successfully created. Errors below:");
+            System.out.println("Account was NOT successfully created. Errors below:");
             System.out.println();
             for (String message : errorMessages) {
                 System.out.println(message);

@@ -6,11 +6,13 @@ import java.util.Arrays;
 import ghumyang.interfaces.CustomerInterface;
 import ghumyang.interfaces.GeneralInterface;
 import ghumyang.interfaces.ManagerInterface;
+import ghumyang.interfaces.MarketInfoInterface;
 import ghumyang.interfaces.NewCustomerInterface;
 
 public class Main {
     public static void main(String args[]) throws IOException {
         Global.clearScreen();
+        // TODO: Add function to query for current date in database
         MAINPAGE();
     }
     
@@ -23,6 +25,9 @@ public class Main {
             // menu output
             Global.clearScreen();
             System.out.println("Hello! Welcome to Garrett and Michael's Trader Interface.");
+            System.out.println("The current date is: " + Global.CURRENT_DATE.toString());
+            if (Global.MARKET_IS_OPEN) System.out.println("The market is currently OPEN");
+            else System.out.println("The market is currently CLOSED");
             System.out.println();
             System.out.println("Options:");
             System.out.println("   (0) Login to a customer account");
@@ -33,7 +38,7 @@ public class Main {
             System.out.println("   (e) Exit the program");
             System.out.println();
 
-            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","e"))); // get input
+            input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","e"))); // get input
             
             // navigation based on input
             switch(input) {
@@ -55,6 +60,7 @@ public class Main {
                     break;
                 case "4":
                     System.out.println("moving to update market info");
+                    MarketInfoInterface.MarketUpdatePage();
                     break;
             }
         }
