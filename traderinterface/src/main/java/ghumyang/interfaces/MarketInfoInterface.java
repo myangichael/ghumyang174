@@ -52,14 +52,18 @@ public class MarketInfoInterface {
         }
     }
 
-    // TODO: when market closes update all closing prices
-    static void openCloseMarket() throws IOException {
+static void openCloseMarket() throws IOException {
+
         // uses existing is_open status to switch
         int switchedValue = -1;
         String message = "";
         if (Global.MARKET_IS_OPEN) {
             message = "Market is now CLOSED";
             switchedValue = 0;
+
+            // update all stocks closing prices to be their current price
+            updateClosingPricesForAllStocks();
+
         } else {
             message = "Market is now OPEN";
             switchedValue = 1;
@@ -82,6 +86,26 @@ public class MarketInfoInterface {
 
         // message displays info based on new status, but global java var will only update when function returns
         Global.messageWithConfirm(message);
+    }
+
+    static void updateClosingPricesForAllStocks() {
+
+        // uses current price and records it as the closing price for the current market date.
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "MERGE INTO stockclosingprices C\n" + //
+                            "USING (SELECT symbol,current_price FROM stocks) S\n" + //
+                            "ON (C.symbol=S.symbol AND C.record_date = (SELECT market_date FROM marketdate))\n" + //
+                            "WHEN MATCHED THEN UPDATE SET C.price = S.current_price\n" + //
+                            "WHEN NOT MATCHED THEN INSERT (C.symbol, C.price, C.record_date)\n" + //
+                            "VALUES (S.symbol, S.current_price, (SELECT market_date FROM marketdate))"
+                )
+            ) { }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: updateClosingPricesForAllStocks");
+            System.exit(1);
+        }
     }
 
     static void setStockPriceWithSymbol() throws IOException {
@@ -157,6 +181,9 @@ public class MarketInfoInterface {
             Global.messageWithConfirm("ERROR: can't travel to the past unfortunately");
             return;
         }
+
+        // set current prices as closing ones for all
+        updateClosingPricesForAllStocks();
 
         // upload date as string and use sql to parse to date
         try (Statement statement = Global.SQL.createStatement()) {

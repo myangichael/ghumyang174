@@ -47,6 +47,7 @@ public class GeneralInterface {
         }
     }
 
+    // TODO: NEED FIX
     static void getStockInfoWithSymbol() throws IOException {
         String title = "Stock Ticker Query";
 
@@ -81,8 +82,7 @@ public class GeneralInterface {
                         "symbol        | " + resultSet.getString("symbol"),
                         "actor name    | " + resultSet.getString("actor_name"),
                         "actor dob     | " + resultSet.getString("dob").substring(0,10),
-                        "current price | " + resultSet.getString("current_price"),
-                        "closing price | " + resultSet.getString("closing_price")
+                        "current price | " + resultSet.getString("current_price")
                     };
                     Global.messageWithConfirm(messages);
                 }
