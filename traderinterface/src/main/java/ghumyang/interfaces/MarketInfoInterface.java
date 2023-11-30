@@ -182,6 +182,9 @@ static void openCloseMarket() throws IOException {
             return;
         }
 
+        // set current prices as closing ones for all
+        updateClosingPricesForAllStocks();
+
         // upload date as string and use sql to parse to date
         try (Statement statement = Global.SQL.createStatement()) {
             try (

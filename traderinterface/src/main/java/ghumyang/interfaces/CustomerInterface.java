@@ -1,6 +1,8 @@
 package ghumyang.interfaces;
 
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -146,6 +148,7 @@ public class CustomerInterface {
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
             Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+            return;
         }
 
         String title = "Buy Stock";
@@ -181,6 +184,7 @@ public class CustomerInterface {
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
             Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+            return;
         }
 
         String title = "Sell Stock";
@@ -244,7 +248,77 @@ public class CustomerInterface {
     static void showBalance(Customer customer) throws IOException {
         // prints balance across all stock accounts belonging to this market account from query
         System.out.println("YOUR BALANCE IS: " + customer.getBalance());
-        Global.awaitConfirmation();
+
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT \n" + //
+                                "    A.symbol,\n" + //
+                                "    A.num_shares,\n" + //
+                                "    A.buy_price,\n" + //
+                                "    S.current_price,\n" + //
+                                "    A.num_shares * S.current_price AS current_value,\n" + //
+                                "    (A.num_shares * S.current_price) - (A.num_shares * A.buy_price) AS change\n" + //
+                                "FROM \n" + //
+                                "    stockaccounts A\n" + //
+                                "INNER JOIN \n" + //
+                                "    stocks S ON A.symbol = S.symbol\n" + //
+                                "WHERE \n" + //
+                                "    A.customer_id = %d", 
+                        customer.getCustomer_id()
+                    )
+                )
+            ) {
+                // store headers for output
+                ArrayList<String> headers = new ArrayList<>();
+                headers.add("Symbol");
+                headers.add("Shares");
+                headers.add("Buy Price");
+                headers.add("Current Price");
+                headers.add("Value");
+                headers.add("Change");
+
+                ArrayList<String> symbols = new ArrayList<>();
+                ArrayList<String> shareCounts = new ArrayList<>();
+                ArrayList<String> buyPrices = new ArrayList<>();
+                ArrayList<String> curPrices = new ArrayList<>();
+                ArrayList<String> curValues = new ArrayList<>();
+                ArrayList<String> changes = new ArrayList<>();
+
+                // adding results to array for output process
+                while (resultSet.next()) {
+                    symbols.add(resultSet.getString("symbol"));
+                    shareCounts.add(resultSet.getString("num_shares"));
+                    buyPrices.add(resultSet.getString("buy_price"));
+                    curPrices.add(resultSet.getString("current_price"));
+                    curValues.add(resultSet.getString("current_value"));
+                    changes.add(resultSet.getString("change"));
+                }
+
+                if (symbols.size() == 0) {
+                    Global.messageWithConfirm("No stocks in your balance");
+                    return;
+                }
+
+                // create large array for output process
+                ArrayList<ArrayList<String>> values = new ArrayList<>();
+                values.add(symbols);
+                values.add(shareCounts);
+                values.add(buyPrices);
+                values.add(curPrices);
+                values.add(curValues);
+                values.add(changes);
+
+                String[] output = Global.tableToString(headers, values);
+
+                Global.messageWithConfirm("Your user balance", output);
+
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: showBalance");
+            System.exit(1);
+        }
     }
 
     static void monthTransactionHistory(Customer customer) throws IOException {
