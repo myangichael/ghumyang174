@@ -382,7 +382,7 @@ public class CustomerInterface {
             ) {
                 while (resultSet.next()) {
                     message = "Transaction Type: Buy, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares " + resultSet.getString("num_shares");
+                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -405,7 +405,7 @@ public class CustomerInterface {
                 while (resultSet.next()) {
                     message = "Transaction Type: Sell, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
                     + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Sell Price: " + resultSet.getString("sell_price")
-                    + ", Number of Shares " + resultSet.getString("num_shares");
+                    + ", Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {

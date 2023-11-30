@@ -173,7 +173,7 @@ public class ManagerInterface {
             ) {
                 while (resultSet.next()) {
                     message = "Transaction Type: Buy, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares " + resultSet.getString("num_shares");
+                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -196,7 +196,7 @@ public class ManagerInterface {
                 while (resultSet.next()) {
                     message = "Transaction Type: Sell, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
                     + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Sell Price: " + resultSet.getString("sell_price")
-                    + ", Number of Shares " + resultSet.getString("num_shares");
+                    + ", Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -274,7 +274,85 @@ public class ManagerInterface {
     }
 
     static void listActiveCustomers() throws IOException {
-        // TODO
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTime(Global.CURRENT_DATE);
+
+        calendar.set(Calendar.DAY_OF_MONTH,1);
+        Date startDate = new Date(calendar.getTimeInMillis());
+        calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+        Date endDate = new Date(calendar.getTimeInMillis());
+
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT C.name as Name, C.username as Username, C.phone_number as Phone_Number, C.email_address as Email_Address, buysell.sum as Num_Shares\n" + //
+                        "FROM (\n" + //
+                        "    SELECT buysell.cid, SUM(num_shares) AS sum\n" + //
+                        "    FROM (\n" + //
+                        "        SELECT T.customer_id AS cid, T.transaction_date AS tdate, B.num_shares as num_shares\n" + //
+                        "        FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                        "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "        UNION ALL\n" + //
+                        "        SELECT T.customer_id AS cid, T.transaction_date AS tdate, S.num_shares as num_shares\n" + //
+                        "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "    ) buysell\n" + //
+                        "    GROUP BY buysell.cid\n" + //
+                        "    HAVING SUM(buysell.num_shares) > 20\n" + //
+                        ") buysell, Customers C\n" + //
+                        "WHERE C.customer_id=buysell.cid",
+                        startDate, endDate, startDate, endDate
+                    )
+                )
+            ) {
+                // store headers for output
+                ArrayList<String> headers = new ArrayList<>();
+                headers.add("Name");
+                headers.add("Username");
+                headers.add("Phone Number");
+                headers.add("Email Address");
+                headers.add("Shares Traded in the Last Month");
+
+                ArrayList<String> name = new ArrayList<>();
+                ArrayList<String> username = new ArrayList<>();
+                ArrayList<String> phoneNumber = new ArrayList<>();
+                ArrayList<String> emailAddress = new ArrayList<>();
+                ArrayList<String> numberOfShares = new ArrayList<>();
+
+                // adding results to array for output process
+                while (resultSet.next()) {
+                    name.add(resultSet.getString("Name"));
+                    username.add(resultSet.getString("Username"));
+                    phoneNumber.add(resultSet.getString("Phone_Number"));
+                    emailAddress.add(resultSet.getString("Email_Address"));
+                    numberOfShares.add(resultSet.getString("Num_Shares"));
+                }
+
+                if (name.size() == 0) {
+                    Global.messageWithConfirm("No active customers");
+                    return;
+                }
+
+                // create large array for output process
+                ArrayList<ArrayList<String>> values = new ArrayList<>();
+                values.add(name);
+                values.add(username);
+                values.add(phoneNumber);
+                values.add(emailAddress);
+                values.add(numberOfShares);
+
+                String[] output = Global.tableToString(headers, values);
+
+                Global.messageWithConfirm("Active Customers", output);
+
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: activeCustomers");
+            System.exit(1);
+        }
+
+
     }
 
     static void generateGDTEReport() throws IOException {

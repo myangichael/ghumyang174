@@ -33,3 +33,4 @@ SQL INIT
 .data
 maven-archiver
 maven-status
+default-compile
