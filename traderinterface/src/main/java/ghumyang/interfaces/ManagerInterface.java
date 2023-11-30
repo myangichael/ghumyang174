@@ -21,6 +21,8 @@ public class ManagerInterface {
 
         String[] loginInfo = Global.getLogin(); // prompt user for login info
 
+        // TODO: SETUP MANAGER LOGIN INFORMATION
+
         if (!Manager.checkLogin(loginInfo[0], loginInfo[1])) { // check login validity for customer
             Global.messageWithConfirm("ERROR: manager login info is invalid :(");
             return;
