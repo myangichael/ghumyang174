@@ -300,5 +300,52 @@ public class Global {
 
         return finalOutput;
     }
+
+    public static boolean theStockExists(String symbol) {
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT * FROM stocks S WHERE S.symbol = '%s'", 
+                        symbol
+                    )
+                )
+            ) {
+                if (!resultSet.next()) {
+                    // no stock ticker with this information
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: theStockExists");
+            System.exit(1);
+        }
+        return true;
+    }
+
+    // symbol has to exist or this query fails
+    public static double getCurrentStockPrice(String symbol) {
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT * FROM stocks S WHERE S.symbol = '%s'", 
+                        symbol
+                    )
+                )
+            ) {
+                if (!resultSet.next()) {
+                    // no stock ticker with this information
+                    return -1;
+                } else {
+                    return Double.parseDouble(resultSet.getString("current_price"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: getSetStockPriceWithSymbol 1");
+            System.exit(1);
+        }
+        return -1;
+    }
     
 }

@@ -1,6 +1,7 @@
 package ghumyang.interfaces;
 
 import java.io.IOException;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDate;
@@ -108,6 +109,13 @@ public class MarketInfoInterface {
             return;
         }
 
+        // make sure that the stock exists
+        if (!Global.theStockExists(symbol)) {
+            Global.messageWithConfirm("ERROR: there is no stock with the symbol " + symbol);
+            return;
+        }
+
+        // only update if it exists
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -118,7 +126,7 @@ public class MarketInfoInterface {
                 )
             ) { }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: setStockPriceWithSymbol");
+            System.out.println("FAILED QUERY: setStockPriceWithSymbol 2");
             System.exit(1);
         }
 
@@ -140,6 +148,13 @@ public class MarketInfoInterface {
             message = "Date updated to " + parsedDate.toString();
         } catch ( DateTimeParseException e ) {
             Global.messageWithConfirm("ERROR: inputted date is invalid");
+            return;
+        }
+
+        // ensure we can never return to the past
+        LocalDate parsedDate = LocalDate.parse (dateString, dateTimeFormatter);
+        if (Global.CURRENT_DATE.after(Date.valueOf(parsedDate))) {
+            Global.messageWithConfirm("ERROR: can't travel to the past unfortunately");
             return;
         }
 

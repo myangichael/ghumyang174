@@ -36,16 +36,17 @@ public class CustomerInterface {
 
             // reload data from this customer and market account every loop
             Customer customer = new Customer(username, password);
+            
+            // updating balance history in accordance to loaded balance
+            customer.updateBalanceHistory();
 
             // hard coded options and switch statements for navigation
             Global.clearScreen();
             System.out.println("Welcome, " + customer.getName() + "!");
             System.out.println();
             System.out.println(String.format("Account ID: %d, total balance is: %1.2f", customer.getCustomer_id(), customer.getBalance()));
-
-            // TODO: SHOW CURRENT MARKET STATUS
-
             System.out.println();
+            Global.printMarketInfo();
             System.out.println("Options:");
             System.out.println("   (0) Make a deposit");
             System.out.println("   (1) Make a withdrawal");
@@ -107,7 +108,7 @@ public class CustomerInterface {
         }
 
         // deposit query
-        customer.deposit(Double.parseDouble(fields.get("Amount")));
+        customer.deposit(Double.parseDouble(fields.get("Amount")), true);
     }
 
     static void withdrawal(Customer customer) throws IOException {
@@ -137,7 +138,7 @@ public class CustomerInterface {
         }
 
         // withdraw query
-        customer.withdrawal(Double.parseDouble(fields.get("Amount")));
+        customer.withdrawal(Double.parseDouble(fields.get("Amount")), true);
     }
 
     static void buyStock(Customer customer) throws IOException {
@@ -150,23 +151,29 @@ public class CustomerInterface {
         String title = "Buy Stock";
 
         // prompt for stock ticker, shares to buy
-        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Symbol","Count")));
 
         // input validation
         if (!Global.isInteger(fields.get("Count"))) {
             Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
             return;
         }
-        if (fields.get("Ticker").equals("")) {
-            Global.messageWithConfirm("ERROR: Ticker is empty");
+        if (fields.get("Symbol").equals("")) {
+            Global.messageWithConfirm("ERROR: Symbol is empty");
             return;
         }
 
-        // query stock info
+        String symbol = fields.get("Symbol");
+        int count = Integer.parseInt(fields.get(("Count")));
 
-        // ensure there is enough balance to buy this many shares
+        // can't buy negative or 0 shares
+        if (count <= 0) {
+            Global.messageWithConfirm("ERROR: can't buy negative shares");
+            return;
+        }
         
         // buy query
+        customer.buyStock(symbol, count);
     }
 
     static void sellStock(Customer customer) throws IOException {
@@ -196,6 +203,8 @@ public class CustomerInterface {
         }
 
         // ensure that the user owns this stock at this purchase price
+
+        // ensure there is enough money to pay commission prior to sell
 
         // ensure that the user has enough stock at this purchase price to sell
 
