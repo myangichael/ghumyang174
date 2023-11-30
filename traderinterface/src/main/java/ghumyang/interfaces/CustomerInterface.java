@@ -168,7 +168,7 @@ public class CustomerInterface {
 
         // can't buy negative or 0 shares
         if (count <= 0) {
-            Global.messageWithConfirm("ERROR: can't buy negative shares");
+            Global.messageWithConfirm("ERROR: can't buy negative or 0 shares");
             return;
         }
         
@@ -186,7 +186,7 @@ public class CustomerInterface {
         String title = "Sell Stock";
 
         // prompt for stock ticker, shares to sell
-        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Ticker","Count","Purchased Price")));
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Symbol","Count","Purchased Price")));
 
         // input validation
         if (!Global.isInteger(fields.get("Count"))) {
@@ -197,18 +197,23 @@ public class CustomerInterface {
             Global.messageWithConfirm("ERROR: inputted purchase price is invalid, should be a DOUBLE");
             return;
         }
-        if (fields.get("Ticker").equals("")) {
-            Global.messageWithConfirm("ERROR: Ticker is empty");
+        if (fields.get("Symbol").equals("")) {
+            Global.messageWithConfirm("ERROR: Symbol is empty");
             return;
         }
 
-        // ensure that the user owns this stock at this purchase price
+        String symbol = fields.get("Symbol");
+        int count = Integer.parseInt(fields.get(("Count")));
+        double purchasedPrice = Double.parseDouble(fields.get("Purchased Price"));
 
-        // ensure there is enough money to pay commission prior to sell
-
-        // ensure that the user has enough stock at this purchase price to sell
+        // can't sell negative or 0 shares
+        if (count <= 0) {
+            Global.messageWithConfirm("ERROR: can't sell negative or 0 shares");
+            return;
+        }
 
         // sell query
+        customer.sellStock(symbol, count, purchasedPrice);
     }
 
     static void cancelTransaction(Customer customer) throws IOException {

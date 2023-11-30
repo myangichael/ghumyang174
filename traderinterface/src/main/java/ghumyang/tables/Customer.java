@@ -259,7 +259,108 @@ public class Customer {
 
     }
 
-    public void sellStock(String ticker, int count) {
+    public void sellStock(String symbol, int count, double purchasedPrice) throws IOException {
+
+        // ensure stock exists
+        if (!Global.theStockExists(symbol)) {
+            Global.messageWithConfirm("ERROR: there is no stock with the symbol " + symbol);
+            return;
+        }
+        
+        // query for the current stockprice
+        double stockPrice = Global.getCurrentStockPrice(symbol);
+        double gain = stockPrice * count - 20;
+
+        Global.messageWithConfirm(
+            new String[] {
+                String.format("You are attempting to sell " + count + " shares of " + symbol + " at %1.2f per share", stockPrice),
+                String.format("You will receive %1.2f after $20 commission", gain),
+                "",
+                "To cancel, exit the program"
+            }
+        );
+
+        // ensure that there is enough money to pay commission
+        if (20 > balance) {
+            Global.messageWithConfirm("ERROR: not enough balance to pay $20 commission");
+            return;
+        }
+
+        // checks stock account to make sure you're good for it
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT *\n" + //
+                        "FROM stockaccounts A\n" + //
+                        "WHERE A.customer_id = %d AND A.symbol = '%s' AND A.buy_price = %1.2f AND A.num_shares >= %d",
+                        customer_id, symbol, purchasedPrice, count
+                        )
+                )
+            ) {
+                if (!resultSet.next()) {
+                    Global.messageWithConfirm(
+                        String.format(
+                            "ERROR: You don't own " + count + " shares of " + symbol + " purchased at %1.2f",
+                            purchasedPrice
+                        )
+                    );
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: sellStock check stockaccount");
+            System.exit(1);
+        }
+
+        // update stockAccount info
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "UPDATE stockaccounts S\n" + //
+                        "SET S.num_shares = S.num_shares - %d\n" + //
+                        "WHERE S.customer_id = %d AND S.symbol = '%s' AND S.buy_price = %1.2f",
+                        count, customer_id, symbol, purchasedPrice
+                    )
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: sellStock update stockaccount");
+            System.exit(1);
+        }
+
+        // clear all stockAccounts where row has 0 shares bought
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "DELETE FROM stockaccounts WHERE num_shares = 0"
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: sellStock delete empty stockaccounts");
+            System.exit(1);
+        }
+
+        int transactionId = createTransactionAndReturnItsID();
+
+        // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to sells table
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "INSERT INTO sells (transaction_id, symbol, purchase_price, sell_price, num_shares) VALUES (%d, '%s', %1.2f, %1.2f, %d)", 
+                        transactionId, symbol, purchasedPrice, stockPrice, count
+                    )
+                )
+            ) { }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: sellStock create sell relation");
+            System.exit(1);
+        }
+
+        // add cash to balance
+        deposit(gain, false);
 
     }
 
