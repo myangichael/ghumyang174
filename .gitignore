@@ -25,3 +25,11 @@ replay_pid*
 
 # DB Login Info
 *.login
+
+.DS_Store
+lib
+SQL INIT
+.login
+.data
+maven-archiver
+maven-status
