@@ -5,11 +5,25 @@ CREATE TABLE stockaccounts (
     customer_id INTEGER NOT NULL,
     symbol VARCHAR(10) NOT NULL,
     num_shares REAL DEFAULT 0,
+    buy_price REAL,
     PRIMARY KEY (stock_acc_id),
     FOREIGN KEY (customer_id) REFERENCES customers,
     FOREIGN KEY (symbol) REFERENCES stocks
 );
 
+DROP SEQUENCE stockaccounts_id_seq;
+DROP TRIGGER trigger_stockaccounts_id;
+
+CREATE SEQUENCE stockaccounts_id_seq START WITH 32;
+
+CREATE TRIGGER trigger_stockaccounts_id
+    BEFORE INSERT ON stockaccounts
+    FOR EACH ROW
+BEGIN
+    SELECT stockaccounts_id_seq.nextval
+        INTO :new.stock_acc_id
+        FROM dual;
+END;
 
 INSERT INTO stockaccounts (customer_id,stock_acc_id,num_shares,symbol)
     WITH s AS (

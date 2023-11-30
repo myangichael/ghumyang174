@@ -7,4 +7,7 @@ CREATE TABLE moviereviews (
     review VARCHAR(65535)
 );
 
-INSERT INTO moviereviews (movie_id, review) VALUES(4, 'best movie world');
+INSERT INTO moviereviews (movie_id, review) VALUES(1, 'I loved it - it''s almost as good as Chinatown!');
+INSERT INTO moviereviews (movie_id, review) VALUES(1, 'Super clever story with an amazing cast as well.');
+INSERT INTO moviereviews (movie_id, review) VALUES(2, 'Truly one of the movies of all time.');
+INSERT INTO moviereviews (movie_id, review) VALUES(3, 'What an emotional rollercoaster!');
