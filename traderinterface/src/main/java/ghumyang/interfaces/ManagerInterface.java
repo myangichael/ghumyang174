@@ -229,7 +229,8 @@ public class ManagerInterface {
             try (Statement statement = Global.SQL.createStatement()) {
                 try (
                     ResultSet resultSet = statement.executeQuery(
-                        "INSERT INTO accrueinterests (transaction_id, amount) VALUES ("+transaction_id+", "+toDeposit+")"
+                        String.format("INSERT INTO accrueinterests (transaction_id, amount) VALUES ("+transaction_id+", %1.2f)", toDeposit)
+                        
                     )
                 ) { }
             } catch (Exception e) {
@@ -326,7 +327,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy  | Symbol: " + resultSet.getString("symbol")
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy    | Symbol: " + resultSet.getString("symbol")
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
@@ -348,7 +349,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell | Symbol: " + resultSet.getString("symbol")
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell   | Symbol: " + resultSet.getString("symbol")
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Sell Price: " + resultSet.getString("sell_price")
                     + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
@@ -384,7 +385,7 @@ public class ManagerInterface {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT T.transaction_id AS tid, T.transaction_date AS xdate\n" + //
+                        "SELECT T.transaction_id AS tid, A.amount AS amount, T.transaction_date AS xdate\n" + //
                         "FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
                         "WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id='%s'", 
                         startDate, endDate, customer_id
@@ -392,7 +393,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest      | Amount: " + String.format("%18.2f", resultSet.getDouble("amount"));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch (Exception e) {
@@ -556,40 +557,58 @@ public class ManagerInterface {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT random.cid AS cid, C.username AS username, C.name AS name, C.email_address AS email_address, random.net_profit AS net_profit\n" + //
+                        "SELECT random.cid, C.username, C.name, C.email_address, C.state, random.net_profit\n" + //
                                 "FROM (\n" + //
                                 "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
                                 "    FROM (\n" + //
+                                "        -- actual money made by sells (or lost represented as negative)\n" + //
                                 "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
                                 "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))"+
-                                "   AND T.transaction_id\n" + //
+                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "        AND T.transaction_id\n" + //
                                 "        NOT IN (\n" + //
                                 "            SELECT Z.transaction_canceled\n" + //
                                 "            FROM cancels Z\n" + //
-                                "            )\n" + //
+                                "        )\n" + //
                                 "        GROUP BY T.customer_id\n" + //
-                                "    \n" + //
+
                                 "        UNION ALL\n" + //
-                                "    \n" + //
+
+                                "        -- transaction fees\n" + //
                                 "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
-                                "            FROM (\n" + //
-                                "                SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                                "                FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
-                                "                WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "                GROUP BY T.customer_id\n" + //
-                                "                UNION ALL\n" + //
-                                "                SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                                "                FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "                WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "                GROUP BY T.customer_id\n" + //
-                                "            ) temp\n" + //
-                                "            GROUP BY temp.cid\n" + //
+                                "        FROM (\n" + //
+                                "            -- Number of buy transactions\n" + //
+                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                                "            FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "            GROUP BY T.customer_id\n" + //
+                                "            UNION ALL\n" + //
+                                "            -- Number of sell transactions\n" + //
+                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                                "            FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "            GROUP BY T.customer_id\n" + //
+                                "            UNION ALL\n" + //
+                                "            -- Number of cancel transactions\n" + //
+                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                                "            FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
+                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "            GROUP BY T.customer_id\n" + //
+                                "        ) temp\n" + //
+                                "        GROUP BY temp.cid\n" + //
+
+                                "        UNION ALL\n" + //
+
+                                "        -- interest\n" + //
+                                "        SELECT T.customer_id AS cid, SUM(A.amount)\n" + //
+                                "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
+                                "        GROUP BY T.customer_id\n" + //
+
                                 "    ) finalTable\n" + //
                                 "    GROUP BY finalTable.cid\n" + //
                                 "    HAVING SUM(finalTable.profit) > 10000\n" + //
                                 ") random INNER JOIN Customers C ON random.cid=C.customer_id",
-                                startDate, endDate, startDate, endDate, startDate, endDate
+                                startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate
                     )
                 )
             ) {
@@ -600,12 +619,14 @@ public class ManagerInterface {
                 headers.add("name");
                 headers.add("email_address");
                 headers.add("net_profit");
+                headers.add("state");
         
                 ArrayList<String> CIDs = new ArrayList<>();
                 ArrayList<String> usernames = new ArrayList<>();
                 ArrayList<String> names = new ArrayList<>();
                 ArrayList<String> emails = new ArrayList<>();
                 ArrayList<String> profits = new ArrayList<>();
+                ArrayList<String> states = new ArrayList<>();
         
                 // adding results to array for output process
                 while (resultSet.next()) {
@@ -614,6 +635,7 @@ public class ManagerInterface {
                     names.add(resultSet.getString("name"));
                     emails.add(resultSet.getString("email_address"));
                     profits.add(resultSet.getString("net_profit"));
+                    states.add(resultSet.getString("state"));
                 }
         
                 if (CIDs.size() == 0) {
@@ -628,6 +650,7 @@ public class ManagerInterface {
                 values.add(names);
                 values.add(emails);
                 values.add(profits);
+                values.add(states);
         
                 String[] output = Global.tableToString(headers, values);
 
@@ -638,6 +661,7 @@ public class ManagerInterface {
             }
         } catch (Exception e) {
             System.out.println("FAILED QUERY: generateCustomerReport");
+            e.printStackTrace();
             System.exit(1);
         }
 
