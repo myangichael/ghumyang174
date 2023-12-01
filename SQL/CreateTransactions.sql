@@ -48,6 +48,7 @@ CREATE TABLE cancels (
 
 CREATE TABLE accrueinterests (
     transaction_id INTEGER,
+    amount REAL,
     FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
 );
 
