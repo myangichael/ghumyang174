@@ -600,7 +600,7 @@ public class ManagerInterface {
                                 "        UNION ALL\n" + //
 
                                 "        -- interest\n" + //
-                                "        SELECT T.customer_id AS cid, SUM(A.amount)\n" + //
+                                "        SELECT T.customer_id AS cid, SUM(A.amount) AS profit\n" + //
                                 "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
                                 "        GROUP BY T.customer_id\n" + //
 
