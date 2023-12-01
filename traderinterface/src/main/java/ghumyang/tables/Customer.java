@@ -338,6 +338,7 @@ public class Customer {
         }
         
         String lastTransaction = "";
+        String canceledTransactionId = "";
         String maxBuyID = "", maxSellID = "";
         try (Statement statement = Global.SQL.createStatement()) {
             // get the latest transaction id
@@ -406,11 +407,13 @@ public class Customer {
 
                 // buy matches
                 cancelBuy(lastTransaction);
+                canceledTransactionId = maxBuyID;
 
             } else if (lastTransaction.equals(maxSellID)) {
 
                 // sell matches
                 cancelSell(lastTransaction);
+                canceledTransactionId = maxSellID;
 
             } else {
 
@@ -432,7 +435,7 @@ public class Customer {
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
                         "INSERT INTO cancels (transaction_id, transaction_canceled) VALUES (%d, %d)",
-                        newTransactionId, newTransactionId-1
+                        newTransactionId, canceledTransactionId
                     )
                 )
             ) { }
