@@ -65,6 +65,7 @@ public class NewCustomerInterface {
             for (String message : errorMessages) {
                 System.out.println(message);
             }
+            Global.awaitConfirmation();
             return;
         } else {
             addUser(username, password, name, state, phone_number, email_address, tax_id);

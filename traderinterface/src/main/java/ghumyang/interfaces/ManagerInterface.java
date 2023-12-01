@@ -309,7 +309,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal   | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch (Exception e) {
