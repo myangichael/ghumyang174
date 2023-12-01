@@ -229,7 +229,7 @@ public class ManagerInterface {
             try (Statement statement = Global.SQL.createStatement()) {
                 try (
                     ResultSet resultSet = statement.executeQuery(
-                        "INSERT INTO accrueinterests (transaction_id) VALUES ("+transaction_id+")"
+                        "INSERT INTO accrueinterests (transaction_id, amount) VALUES ("+transaction_id+", "+toDeposit+")"
                     )
                 ) { }
             } catch (Exception e) {
@@ -284,7 +284,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: withdrawal/deposit");
                 e.printStackTrace();
                 System.exit(1);
@@ -306,7 +306,7 @@ public class ManagerInterface {
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: buy");
                 e.printStackTrace();
                 System.exit(1);
@@ -329,7 +329,7 @@ public class ManagerInterface {
                     + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: sell");
                 e.printStackTrace();
                 System.exit(1);
@@ -350,7 +350,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Cancel | CancelID: " + resultSet.getString("tc");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: cancel");
                 e.printStackTrace();
                 System.exit(1);
@@ -371,7 +371,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: interest");
                 e.printStackTrace();
                 System.exit(1);
@@ -389,7 +389,7 @@ public class ManagerInterface {
                 while (resultSet.next()) {
                     username = resultSet.getString("username");
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: get username");
                 e.printStackTrace();
                 System.exit(1);
@@ -533,7 +533,12 @@ public class ManagerInterface {
                                 "    FROM (\n" + //
                                 "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
                                 "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))"+
+                                "   AND T.transaction_id\n" + //
+                                "        NOT IN (\n" + //
+                                "            SELECT Z.transaction_canceled\n" + //
+                                "            FROM cancels Z\n" + //
+                                "            )\n" + //
                                 "        GROUP BY T.customer_id\n" + //
                                 "    \n" + //
                                 "        UNION ALL\n" + //
@@ -606,8 +611,6 @@ public class ManagerInterface {
             System.out.println("FAILED QUERY: generateCustomerReport");
             System.exit(1);
         }
-
-
 
     }
 
@@ -747,6 +750,8 @@ public class ManagerInterface {
             System.out.println("FAILED QUERY: deleteAllTransactions");
             System.exit(1);
         }
+
+        Global.messageWithConfirm("All transactions have been successfully deleted");
     }
 
 }

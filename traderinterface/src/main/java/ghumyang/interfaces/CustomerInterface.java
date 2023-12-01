@@ -162,8 +162,8 @@ public class CustomerInterface {
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Symbol","Count")));
 
         // input validation
-        if (!Global.isInteger(fields.get("Count"))) {
-            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
+        if (!Global.isDouble(fields.get("Count"))) {
+            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an DOUBLE");
             return;
         }
         if (fields.get("Symbol").equals("")) {
@@ -172,7 +172,7 @@ public class CustomerInterface {
         }
 
         String symbol = fields.get("Symbol");
-        int count = Integer.parseInt(fields.get(("Count")));
+        double count = Double.parseDouble(fields.get(("Count")));
 
         // can't buy negative or 0 shares
         if (count <= 0) {
@@ -198,8 +198,8 @@ public class CustomerInterface {
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Symbol","Count","Purchased Price")));
 
         // input validation
-        if (!Global.isInteger(fields.get("Count"))) {
-            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an INTEGER");
+        if (!Global.isDouble(fields.get("Count"))) {
+            Global.messageWithConfirm("ERROR: inputted count is invalid, should be an DOUBLE");
             return;
         }
         if (!Global.isDouble(fields.get("Purchased Price"))) {
@@ -212,7 +212,7 @@ public class CustomerInterface {
         }
 
         String symbol = fields.get("Symbol");
-        int count = Integer.parseInt(fields.get(("Count")));
+        double count = Double.parseDouble(fields.get(("Count")));
         double purchasedPrice = Double.parseDouble(fields.get("Purchased Price"));
 
         // can't sell negative or 0 shares
@@ -226,28 +226,8 @@ public class CustomerInterface {
     }
 
     static void cancelTransaction(Customer customer) throws IOException {
-
-        // ensure market is open
-        if (!Global.MARKET_IS_OPEN) {
-            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
-        }
-
-        String title = "Cancel Transaction";
-
-        // prompt for transaction to cancel
-        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("TransactionId")));
-
-        // input validation
-        if (!Global.isInteger(fields.get("TransactionId"))) {
-            Global.messageWithConfirm("ERROR: inputted TransactionId is invalid, should be an INTEGER");
-            return;
-        }
-
-        // ensure this transaction exists
-
-        // ensure date is same
-        
-        // cancel transaction
+        Global.messageWithConfirm("You are now attempting to cancel the most recent buy or sell transaction");
+        customer.cancelTransaction();
     }
 
     static void showBalance(Customer customer) throws IOException {
