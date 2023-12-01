@@ -696,31 +696,6 @@ public class ManagerInterface {
 
                         "        UNION ALL\n" + //
 
-                        "        -- transaction fees\n" + //
-                        "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
-                        "        FROM (\n" + //
-                        "            -- Number of buy transactions\n" + //
-                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                        "            FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
-                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                        "            GROUP BY T.customer_id\n" + //
-                        "            UNION ALL\n" + //
-                        "            -- Number of sell transactions\n" + //
-                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                        "            FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                        "            GROUP BY T.customer_id\n" + //
-                        "            UNION ALL\n" + //
-                        "            -- Number of cancel transactions\n" + //
-                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                        "            FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
-                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                        "            GROUP BY T.customer_id\n" + //
-                        "        ) temp\n" + //
-                        "        GROUP BY temp.cid\n" + //
-
-                        "        UNION ALL\n" + //
-
                         "        -- interest\n" + //
                         "        SELECT T.customer_id AS cid, SUM(A.amount) AS profit\n" + //
                         "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
