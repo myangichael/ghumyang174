@@ -4,11 +4,9 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -18,6 +16,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import ghumyang.Global;
+import ghumyang.tables.Customer;
 import ghumyang.tables.Manager;
 
 public class ManagerInterface {
@@ -25,15 +24,13 @@ public class ManagerInterface {
 
         String[] loginInfo = Global.getLogin(); // prompt user for login info
 
-        // TODO: SETUP MANAGER LOGIN INFORMATION
-
-        if (!Manager.checkLogin(loginInfo[0], loginInfo[1])) { // check login validity for customer
+        if (!Manager.isThereManagerWithThisLogin(loginInfo[0], loginInfo[1])) {
             Global.messageWithConfirm("ERROR: manager login info is invalid :(");
             return;
         }
-
-        Manager manager = new Manager(loginInfo[0], loginInfo[1]); // if valid login info continue to account page
-        ManagerAccountPage(manager);
+ 
+        // if valid login info continue to account page
+        ManagerAccountPage(new Manager(loginInfo[0], loginInfo[1]));
     }
 
     static void ManagerAccountPage(Manager manager) throws IOException {
