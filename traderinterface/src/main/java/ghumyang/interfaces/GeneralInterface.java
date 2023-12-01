@@ -47,7 +47,6 @@ public class GeneralInterface {
         }
     }
 
-    // TODO: NEED FIX
     static void getStockInfoWithSymbol() throws IOException {
         String title = "Stock Ticker Query";
 
@@ -191,8 +190,6 @@ public class GeneralInterface {
             System.out.println("FAILED QUERY: getMovieInfo 2");
             System.exit(1);
         }
-
-        // TODO: ADD ALL CONTRACTS ASSOCIATED WITH THIS MOVIE
 
     }
 
