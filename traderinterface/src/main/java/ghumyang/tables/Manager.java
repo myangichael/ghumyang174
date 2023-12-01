@@ -41,7 +41,7 @@ public class Manager {
                 this.balance = Double.parseDouble(resultSet.getString("balance"));
             }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: declare Customer");
+            System.out.println("FAILED QUERY: declare Manager");
             System.exit(1);
         }
     }
