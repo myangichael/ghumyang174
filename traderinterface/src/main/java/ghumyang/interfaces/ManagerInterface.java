@@ -538,7 +538,33 @@ public class ManagerInterface {
     }
 
     static void deleteAllTransactions() throws IOException {
-        // TODO
+        // can only be done when market is closed
+        if (!Global.MARKET_IS_OPEN) {
+            Global.messageWithConfirm("ERROR: market is still open");
+        }
+        // can only be done on the first of a month
+        Calendar calendarDate = new GregorianCalendar();
+        calendarDate.setTime(Global.CURRENT_DATE);
+        if (calendarDate.get(Calendar.DAY_OF_MONTH) != calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+            Global.messageWithConfirm(new String[]
+                {
+                    "Current date is: " + Global.CURRENT_DATE.toString(), 
+                    "The last day of the month is: " + calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH),
+                    "You cannot add interest today."
+                }
+            );  
+            return;
+        }
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "DELETE FROM transactions"
+                )
+            ) { }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: deleteAllTransactions");
+            System.exit(1);
+        }
     }
 
 }

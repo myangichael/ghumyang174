@@ -51,3 +51,9 @@ INSERT INTO stockaccounts (customer_id,stock_acc_id,num_shares,symbol)
 SELECT * FROM s;
 
 SELECT * FROM stockaccounts;
+
+SELECT (symbol, num_shares, buy_price, current_price, (num_shares * current_price), ((num_shares * current_price) - (num_shares * buy_price)))
+AS (symbol, num_shares, buy_price, current_price, current_value, change)
+FROM stockaccounts A
+INNER JOIN stocks S ON A.symbol=S.symbol
+WHERE customer_id=12
