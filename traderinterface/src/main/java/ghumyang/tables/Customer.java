@@ -1,6 +1,5 @@
 package ghumyang.tables;
 import lombok.Getter;
-import oracle.net.aso.j;
 
 import java.io.IOException;
 import java.sql.ResultSet;
