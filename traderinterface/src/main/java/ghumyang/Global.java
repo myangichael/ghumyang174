@@ -347,5 +347,59 @@ public class Global {
         }
         return -1;
     }
+
+    // helper function to update the balance history for a customer with their current balance
+    public static void updateBalanceHistory(int customer_id) throws IOException {
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "MERGE INTO balancehistories B USING (SELECT customer_id, balance FROM customers WHERE customer_id = %s) S ON (B.customer_id = S.customer_id AND B.record_date=TO_DATE('%s', 'YYYY-MM-DD')) WHEN MATCHED THEN UPDATE SET B.balance = S.balance WHEN NOT MATCHED THEN INSERT (B.customer_id,B.balance,B.record_date) VALUES (S.customer_id,S.balance,TO_DATE('%s', 'YYYY-MM-DD'))", 
+                        customer_id, Global.CURRENT_DATE.toString(),Global.CURRENT_DATE.toString()
+                    )
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: updateBalanceHistory");
+            System.exit(1);
+        }
+    }
+
+    // helper function used for every transaction
+    public static int createTransactionAndReturnItsID(int customer_id) {
+
+        // adds a new transaction into transactions table
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "INSERT INTO transactions (customer_id,transaction_date) VALUES (%s, TO_DATE('%s', 'YYYY-MM-DD'))", 
+                        String.valueOf(customer_id), Global.CURRENT_DATE.toString()
+                    )
+                )
+            ) { }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: createTransactionAndReturnItsID 1");
+            System.exit(1);
+        }
+
+        // queries for and returns its ID
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                "SELECT MAX(C.transaction_id) AS id FROM transactions C"
+                )
+            ) {
+                if (resultSet.next()) {
+                    return Integer.parseInt(resultSet.getString("id"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: createTransactionAndReturnItsID 2");
+            System.exit(1);
+        }
+
+        return -1;
+    }
     
 }

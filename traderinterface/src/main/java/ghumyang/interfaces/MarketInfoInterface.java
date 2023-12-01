@@ -144,8 +144,8 @@ static void openCloseMarket() throws IOException {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "UPDATE stocks S SET S.current_price = %s WHERE S.symbol = '%s'", 
-                        String.valueOf(newPrice), symbol
+                        "UPDATE stocks S SET S.current_price = %1.2f WHERE S.symbol = '%s'", 
+                        newPrice, symbol
                     )
                 )
             ) { }

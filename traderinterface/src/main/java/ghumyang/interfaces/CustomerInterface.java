@@ -45,7 +45,7 @@ public class CustomerInterface {
             Customer customer = new Customer(username, password);
             
             // updating balance history in accordance to loaded balance
-            customer.updateBalanceHistory();
+            Global.updateBalanceHistory(customer.getCustomer_id());
 
             // hard coded options and switch statements for navigation
             Global.clearScreen();
@@ -360,7 +360,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Deposit/Withdrawal, " + "Date: " + resultSet.getDate("xdate").toString() + ", Amount: " + resultSet.getString("amount");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -381,8 +381,8 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Buy, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares " + resultSet.getString("num_shares");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy  | Symbol: " + resultSet.getString("symbol")
+                    + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -403,9 +403,9 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Sell, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Sell Price: " + resultSet.getString("sell_price")
-                    + ", Number of Shares " + resultSet.getString("num_shares");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell | Symbol: " + resultSet.getString("symbol")
+                    + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Sell Price: " + resultSet.getString("sell_price")
+                    + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -426,7 +426,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Cancel, " + "Date: " + resultSet.getDate("xdate").toString() + ", Transaction Cancelled: " + resultSet.getString("tc");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Cancel | CancelID: " + resultSet.getString("tc");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -447,7 +447,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Accrue Interest, " + "Date: " + resultSet.getDate("xdate").toString();
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -459,7 +459,7 @@ public class CustomerInterface {
             ArrayList<String> transactionList = new ArrayList<>();
 
             Map.Entry<Integer,String> temp = queries.pollFirstEntry();
-            String bonus = temp.getValue(); // TODO: shouldn't be an error of empty treemap, since no customer is caught earlier, just check
+            String bonus = temp.getValue(); 
             for (Map.Entry<Integer,String> entry : queries.entrySet()) {
                 message = entry.getKey() + " : " + entry.getValue();
                 transactionList.add(message);
