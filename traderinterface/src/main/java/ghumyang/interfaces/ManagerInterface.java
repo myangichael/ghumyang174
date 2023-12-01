@@ -448,7 +448,7 @@ public class ManagerInterface {
                         "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
                         "    ) buysell\n" + //
                         "    GROUP BY buysell.cid\n" + //
-                        "    HAVING SUM(buysell.num_shares) > 20\n" + //
+                        "    HAVING SUM(buysell.num_shares) > 1000\n" + //
                         ") buysell, Customers C\n" + //
                         "WHERE C.customer_id=buysell.cid",
                         startDate, endDate, startDate, endDate
@@ -558,7 +558,7 @@ public class ManagerInterface {
                                 "            GROUP BY temp.cid\n" + //
                                 "    ) finalTable\n" + //
                                 "    GROUP BY finalTable.cid\n" + //
-                                "    HAVING SUM(finalTable.profit) > 0\n" + //
+                                "    HAVING SUM(finalTable.profit) > 10000\n" + //
                                 ") random INNER JOIN Customers C ON random.cid=C.customer_id",
                                 startDate, endDate, startDate, endDate, startDate, endDate
                     )
