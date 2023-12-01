@@ -418,7 +418,7 @@ public class Customer {
             } else {
 
                 // no match
-                Global.messageWithConfirm("Last transaction was not a buy or sell");
+                Global.messageWithConfirm("Last transaction was not a buy or sell. Last transaction ID: " + lastTransaction + ", Last buy ID: " + maxBuyID + ", Last sell ID" + maxSellID);
                 return;
             }
 
