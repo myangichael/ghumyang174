@@ -313,8 +313,102 @@ public class Customer {
 
     }
 
-    public void cancelTransaction(int transactionId) {
+    public void cancelTransaction(int transactionId) throws IOException {
+        
+        if (20 > balance) {
+            Global.messageWithConfirm("ERROR: not enough balance to make this cancellation");
+            return;
+        }
+        
+        String lastTransaction = "";
+        String maxBuyID = "", maxSellID = "";
+        try (Statement statement = Global.SQL.createStatement()) {
+            // get the latest transaction id
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT MAX(T.transaction_id) AS maxID FROM transactions T"
+                    )
+                )
+            ) {
+                if (resultSet.next()) {
+                    lastTransaction = resultSet.getString("maxID");
+                } else {
+                    Global.messageWithConfirm("No recorded transactions");
+                    return;
+                }
+            }
 
+            // get the latest buy transaction id
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT MAX(B.transaction_id) AS maxID FROM buys B"
+                    )
+                )
+            ) {
+                if (resultSet.next()) {
+                    maxBuyID = resultSet.getString("maxID");
+                } else {
+                    // Do nothing, since it might be sell/nothing
+                }
+            }
+
+            // get the latest sell transaction id
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT MAX(S.transaction_id) AS maxID FROM sells S"
+                    )
+                )
+            ) {
+                if (resultSet.next()) {
+                    maxSellID = resultSet.getString("maxID");
+                } else {
+                    // Do nothing, since it might be nothing
+                }
+            }
+
+            if (lastTransaction.equals(maxBuyID)) {
+                cancelBuy(lastTransaction);
+            } else if (lastTransaction.equals(maxSellID)) {
+
+            } else {
+                Global.messageWithConfirm("Last transaction was not a buy or sell");
+                return;
+            }
+
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelTransaction");
+            System.exit(1);
+        }
     }
     
+    static void cancelBuy(String transactionID) {
+        String symbol = "";
+        double purchase_price, num_shares;
+
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT * FROM buys B WHERE B.transaction_id=%s",
+                        transactionID
+                    )
+                )
+            ) {
+                if (resultSet.next()) {
+                    symbol = resultSet.getString("symbol");
+                    purchase_price = resultSet.getDouble("purchase_price");
+                    num_shares = resultSet.getDouble("num_shares");
+                } else {
+                    // Do nothing, since it might be nothing
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelTransaction");
+            System.exit(1);
+        }
+    }
+
 }

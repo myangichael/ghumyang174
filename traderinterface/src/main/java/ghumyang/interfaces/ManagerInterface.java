@@ -284,7 +284,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: withdrawal/deposit");
                 e.printStackTrace();
                 System.exit(1);
@@ -306,7 +306,7 @@ public class ManagerInterface {
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: buy");
                 e.printStackTrace();
                 System.exit(1);
@@ -329,7 +329,7 @@ public class ManagerInterface {
                     + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: sell");
                 e.printStackTrace();
                 System.exit(1);
@@ -350,7 +350,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Cancel | CancelID: " + resultSet.getString("tc");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: cancel");
                 e.printStackTrace();
                 System.exit(1);
@@ -371,7 +371,7 @@ public class ManagerInterface {
                     message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: interest");
                 e.printStackTrace();
                 System.exit(1);
@@ -389,7 +389,7 @@ public class ManagerInterface {
                 while (resultSet.next()) {
                     username = resultSet.getString("username");
                 }
-            } catch(Exception e) {
+            } catch (Exception e) {
                 System.out.println("FAILED QUERY: get username");
                 e.printStackTrace();
                 System.exit(1);
