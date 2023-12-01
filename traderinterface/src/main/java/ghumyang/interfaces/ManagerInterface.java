@@ -266,6 +266,30 @@ public class ManagerInterface {
             Global.messageWithConfirm("ERROR: customer id is an invalid integer");
             return;
         }
+        
+        // get "initial balance", or in this case most recently recorded balance prior to the start of the month, defaults to 0 if no
+        double initialBalancePriorToStartOfMonth = 0;
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "SELECT B.balance\n" + //
+                            "FROM balancehistories B\n" + //
+                            "WHERE B.record_date IN (\n" + //
+                            "    SELECT MAX(record_date)\n" + //
+                            "    FROM balancehistories C\n" + //
+                            "    WHERE C.record_date < TO_DATE('"+startDate.toString()+"', 'YYYY-MM-DD')\n" + //
+                            "    AND C.customer_id = "+customer_id+"\n" + //
+                            ") AND B.customer_id = "+customer_id
+                )
+            ) {
+                while (resultSet.next()) {
+                    initialBalancePriorToStartOfMonth = Double.parseDouble(resultSet.getString("balance"));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: addInterest get balance prior to start of month");
+            System.exit(1);
+        }
 
         String message = "";
         try (Statement statement = Global.SQL.createStatement()) {
@@ -380,14 +404,18 @@ public class ManagerInterface {
             ArrayList<String> transactionList = new ArrayList<>();
             
             String username = "null";
+            String email_address = "null";
+            String balance = "0";
 
             try (
                 ResultSet resultSet = statement.executeQuery(
-                    "SELECT username FROM customers C WHERE C.customer_id = " + customer_id
+                    "SELECT username, email_address, balance FROM customers C WHERE C.customer_id = " + customer_id
                 )
             ) {
                 while (resultSet.next()) {
-                    username = resultSet.getString("username");
+                    username = resultSet.getString("username");  
+                    email_address = resultSet.getString("email_address");       
+                    balance = resultSet.getString("balance");           
                 }
             } catch (Exception e) {
                 System.out.println("FAILED QUERY: get username");
@@ -395,7 +423,8 @@ public class ManagerInterface {
                 System.exit(1);
             }
 
-            String bonus = "Monthly Report for: " + username;
+            String bonus = "Monthly Report for: " + username + " | " + email_address + "\n" +
+            "Initial balance: " + initialBalancePriorToStartOfMonth + " | Current balance: " + balance;
 
             for (Map.Entry<Integer,String> entry : queries.entrySet()) {
                 message = entry.getKey() + " : " + entry.getValue();
