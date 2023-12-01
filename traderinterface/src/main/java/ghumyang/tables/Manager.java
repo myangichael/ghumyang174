@@ -17,7 +17,6 @@ public class Manager {
     @Getter String username;
     @Getter String password;
     @Getter int manager_id;
-    @Getter double balance;
 
     public Manager(String username, String password) {
         try (Statement statement = Global.SQL.createStatement()) {
@@ -38,7 +37,6 @@ public class Manager {
                 this.username = resultSet.getString("username");
                 this.password = resultSet.getString("password");
                 this.manager_id = Integer.parseInt(resultSet.getString("manager_id"));
-                this.balance = Double.parseDouble(resultSet.getString("balance"));
             }
         } catch (Exception e) {
             System.out.println("FAILED QUERY: declare Manager");
