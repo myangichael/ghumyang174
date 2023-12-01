@@ -18,7 +18,7 @@ CREATE TABLE transactions (
 CREATE TABLE depositwithdrawal (
     transaction_id INTEGER,
     amount REAL,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
 );
 
 CREATE TABLE buys (
@@ -26,7 +26,8 @@ CREATE TABLE buys (
     symbol VARCHAR(30),
     purchase_price REAL,
     num_shares INTEGER,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+    FOREIGN KEY (symbol) REFERENCES stocks(symbol)
 );
 
 CREATE TABLE sells (
@@ -35,18 +36,19 @@ CREATE TABLE sells (
     purchase_price REAL,
     sell_price REAL,
     num_shares INTEGER,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
+    FOREIGN KEY (symbol) REFERENCES stocks(symbol)
 );
 
 CREATE TABLE cancels (
     transaction_id INTEGER,
     transaction_canceled INTEGER,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
 );
 
 CREATE TABLE accrueinterests (
     transaction_id INTEGER,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE,
 );
 
 CREATE SEQUENCE transaction_id_seq;
