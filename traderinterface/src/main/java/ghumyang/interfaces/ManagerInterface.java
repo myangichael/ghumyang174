@@ -505,7 +505,115 @@ public class ManagerInterface {
     }
 
     static void generateGDTEReport() throws IOException {
-        // TODO
+        // check if last day of month
+        Calendar calendarDate = new GregorianCalendar();
+        calendarDate.setTime(Global.CURRENT_DATE);
+        if (calendarDate.get(Calendar.DAY_OF_MONTH) != calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+            Global.messageWithConfirm(new String[]
+                {
+                    "Current date is: " + Global.CURRENT_DATE.toString(), 
+                    "The last day of the month is: " + calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH),
+                    "The month is not over yet. Please wait to generate the DTER"
+                }
+            ); 
+            return;
+        }
+
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTime(Global.CURRENT_DATE);
+
+        calendar.set(Calendar.DAY_OF_MONTH,1);
+        Date startDate = new Date(calendar.getTimeInMillis());
+        calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+        Date endDate = new Date(calendar.getTimeInMillis());
+
+
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT random.cid AS cid, C.username AS username, C.name AS name, C.email_address AS email_address, random.net_profit AS net_profit\n" + //
+                                "FROM (\n" + //
+                                "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
+                                "    FROM (\n" + //
+                                "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
+                                "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "        GROUP BY T.customer_id\n" + //
+                                "    \n" + //
+                                "        UNION ALL\n" + //
+                                "    \n" + //
+                                "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
+                                "            FROM (\n" + //
+                                "                SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                                "                FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                                "                WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "                GROUP BY T.customer_id\n" + //
+                                "                UNION ALL\n" + //
+                                "                SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                                "                FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                                "                WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "                GROUP BY T.customer_id\n" + //
+                                "            ) temp\n" + //
+                                "            GROUP BY temp.cid\n" + //
+                                "    ) finalTable\n" + //
+                                "    GROUP BY finalTable.cid\n" + //
+                                "    HAVING SUM(finalTable.profit) > 0\n" + //
+                                ") random INNER JOIN Customers C ON random.cid=C.customer_id",
+                                startDate, endDate, startDate, endDate, startDate, endDate
+                    )
+                )
+            ) {
+                // store headers for output
+                ArrayList<String> headers = new ArrayList<>();
+                headers.add("CID");
+                headers.add("username");
+                headers.add("name");
+                headers.add("email_address");
+                headers.add("net_profit");
+        
+                ArrayList<String> CIDs = new ArrayList<>();
+                ArrayList<String> usernames = new ArrayList<>();
+                ArrayList<String> names = new ArrayList<>();
+                ArrayList<String> emails = new ArrayList<>();
+                ArrayList<String> profits = new ArrayList<>();
+        
+                // adding results to array for output process
+                while (resultSet.next()) {
+                    CIDs.add(resultSet.getString("CID"));
+                    usernames.add(resultSet.getString("username"));
+                    names.add(resultSet.getString("name"));
+                    emails.add(resultSet.getString("email_address"));
+                    profits.add(resultSet.getString("net_profit"));
+                }
+        
+                if (CIDs.size() == 0) {
+                    Global.messageWithConfirm("No customers who made more than $10,000 this month");
+                    return;
+                }
+        
+                // create large array for output process
+                ArrayList<ArrayList<String>> values = new ArrayList<>();
+                values.add(CIDs);
+                values.add(usernames);
+                values.add(names);
+                values.add(emails);
+                values.add(profits);
+        
+                String[] output = Global.tableToString(headers, values);
+
+                String bonus = "Accounts that made more than $10,000 this month ";
+        
+                Global.messageWithConfirm(bonus, output);
+        
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: generateCustomerReport");
+            System.exit(1);
+        }
+
+
+
     }
 
     static void generateCustomerReport() throws IOException {
