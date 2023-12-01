@@ -1,5 +1,6 @@
 package ghumyang.tables;
 import lombok.Getter;
+import oracle.net.aso.j;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -140,7 +141,7 @@ public class Customer {
      * create transaction in buys
      * create stock account if needed otherwise update
      */
-    public void buyStock(String symbol, int count) throws IOException {
+    public void buyStock(String symbol, double count) throws IOException {
 
         // ensure stock exists
         if (!Global.theStockExists(symbol)) {
@@ -174,7 +175,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "INSERT INTO buys (transaction_id, symbol, purchase_price, num_shares) VALUES (%d, '%s', %1.2f, %d)", 
+                        "INSERT INTO buys (transaction_id, symbol, purchase_price, num_shares) VALUES (%d, '%s', %1.2f, %1.2f)", 
                         transactionId, symbol, stockPrice, count
                     )
                 )
@@ -192,8 +193,8 @@ public class Customer {
                         "MERGE INTO stockaccounts S\n" + //
                                 "USING (SELECT customer_id FROM customers WHERE customer_id = %d) C\n" + //
                                 "ON (S.customer_id = C.customer_id AND S.symbol = '%s' AND S.buy_price = %1.2f)\n" + //
-                                "WHEN MATCHED THEN UPDATE SET S.num_shares = S.num_shares + %d\n" + //
-                                "WHEN NOT MATCHED THEN INSERT (S.customer_id, S.symbol, S.num_shares, S.buy_price) VALUES (C.customer_id, '%s', %d, %1.2f)",
+                                "WHEN MATCHED THEN UPDATE SET S.num_shares = S.num_shares + %1.2f\n" + //
+                                "WHEN NOT MATCHED THEN INSERT (S.customer_id, S.symbol, S.num_shares, S.buy_price) VALUES (C.customer_id, '%s', %1.2f, %1.2f)",
                         customer_id, symbol, stockPrice, count, symbol, count, stockPrice
                     )
                 )
@@ -208,7 +209,7 @@ public class Customer {
 
     }
 
-    public void sellStock(String symbol, int count, double purchasedPrice) throws IOException {
+    public void sellStock(String symbol, double count, double purchasedPrice) throws IOException {
 
         // ensure stock exists
         if (!Global.theStockExists(symbol)) {
@@ -242,7 +243,7 @@ public class Customer {
                     String.format(
                         "SELECT *\n" + //
                         "FROM stockaccounts A\n" + //
-                        "WHERE A.customer_id = %d AND A.symbol = '%s' AND A.buy_price = %1.2f AND A.num_shares >= %d",
+                        "WHERE A.customer_id = %d AND A.symbol = '%s' AND A.buy_price = %1.2f AND A.num_shares >= %1.2f",
                         customer_id, symbol, purchasedPrice, count
                         )
                 )
@@ -268,7 +269,7 @@ public class Customer {
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
                         "UPDATE stockaccounts S\n" + //
-                        "SET S.num_shares = S.num_shares - %d\n" + //
+                        "SET S.num_shares = S.num_shares - %1.2f\n" + //
                         "WHERE S.customer_id = %d AND S.symbol = '%s' AND S.buy_price = %1.2f",
                         count, customer_id, symbol, purchasedPrice
                     )
@@ -298,7 +299,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "INSERT INTO sells (transaction_id, symbol, purchase_price, sell_price, num_shares) VALUES (%d, '%s', %1.2f, %1.2f, %d)", 
+                        "INSERT INTO sells (transaction_id, symbol, purchase_price, sell_price, num_shares) VALUES (%d, '%s', %1.2f, %1.2f, %1.2f)", 
                         transactionId, symbol, purchasedPrice, stockPrice, count
                     )
                 )
@@ -313,7 +314,7 @@ public class Customer {
 
     }
 
-    public void cancelTransaction(int transactionId) throws IOException {
+    public void cancelTransaction() throws IOException {
         
         if (20 > balance) {
             Global.messageWithConfirm("ERROR: not enough balance to make this cancellation");
@@ -333,8 +334,17 @@ public class Customer {
             ) {
                 if (resultSet.next()) {
                     lastTransaction = resultSet.getString("maxID");
+
+                    // query could return null (there are no transactions in the table), exit
+                    if (lastTransaction == null) {
+                        Global.messageWithConfirm("ERROR: no recorded transactions");
+                        return;
+                    }
+                    
                 } else {
-                    Global.messageWithConfirm("No recorded transactions");
+
+                    // can never be reached unless serious issue
+                    Global.messageWithConfirm("ERROR: no recorded transactions");
                     return;
                 }
             }
@@ -369,11 +379,26 @@ public class Customer {
                 }
             }
 
+            // check if our buyid and sellid are null
+            if (maxBuyID == null && maxSellID == null) {
+                Global.messageWithConfirm("ERROR: no prior recorded buys or sells");
+                return;
+            }
+
+            // we check whichiever matches
             if (lastTransaction.equals(maxBuyID)) {
+
+                // buy matches
                 cancelBuy(lastTransaction);
+
             } else if (lastTransaction.equals(maxSellID)) {
 
+                // sell matches
+                cancelSell(lastTransaction);
+
             } else {
+
+                // no match
                 Global.messageWithConfirm("Last transaction was not a buy or sell");
                 return;
             }
@@ -382,11 +407,30 @@ public class Customer {
             System.out.println("FAILED QUERY: cancelTransaction");
             System.exit(1);
         }
+
+        // create cancel transaction entry in that table
+        int newTransactionId = Global.createTransactionAndReturnItsID(customer_id);
+        // add to cancel table
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "INSERT INTO cancels (transaction_id, transaction_canceled) VALUES (%d, %d)",
+                        newTransactionId, newTransactionId-1
+                    )
+                )
+            ) { }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelBuy insert into cancels table");
+            System.exit(1);
+        }
+
+
     }
     
-    static void cancelBuy(String transactionID) {
+    void cancelBuy(String transactionID) throws IOException {
         String symbol = "";
-        double purchase_price, num_shares;
+        double purchase_price = 0.0, num_shares = 0.0;
 
         try (Statement statement = Global.SQL.createStatement()) {
             try (
@@ -402,13 +446,101 @@ public class Customer {
                     purchase_price = resultSet.getDouble("purchase_price");
                     num_shares = resultSet.getDouble("num_shares");
                 } else {
-                    // Do nothing, since it might be nothing
+                    // Do nothing, guaranteed to exist when in cancelBuy
                 }
             }
+
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: cancelTransaction");
+            System.out.println("FAILED QUERY: cancelBuy query buy info");
             System.exit(1);
         }
+
+        // update stockAccount info
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "UPDATE stockaccounts S\n" + //
+                        "SET S.num_shares = S.num_shares - %1.2f\n" + //
+                        "WHERE S.customer_id = %d AND S.symbol = '%s' AND S.buy_price = %1.2f",
+                        num_shares, customer_id, symbol, purchase_price
+                    )
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelBuy update stockAccount");
+            System.exit(1);
+        }
+
+        // clear all stockAccounts where row has 0 shares bought
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "DELETE FROM stockaccounts WHERE num_shares = 0"
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: sellStock delete empty stockaccounts");
+            System.exit(1);
+        }
+
+        // refund money from transaction -20 for cancel transaction
+        deposit((num_shares * purchase_price) - 20, false);
+
+        Global.messageWithConfirm("Your most recent buy transaction has been canceled with $20 commission fee");
+
     }
 
+    void cancelSell(String transactionID) throws IOException {
+        String symbol = "";
+        double purchase_price = 0.0, sell_price = 0.0, num_shares = 0.0;
+
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT * FROM sells S WHERE S.transaction_id=%s",
+                        transactionID
+                    )
+                )
+            ) {
+                if (resultSet.next()) {
+                    symbol = resultSet.getString("symbol");
+                    purchase_price = resultSet.getDouble("purchase_price");
+                    sell_price = resultSet.getDouble("sell_price");
+                    num_shares = resultSet.getDouble("num_shares");
+                } else {
+                    // Do nothing, guaranteed to exist when in cancelSell
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelSell query buy info");
+            System.exit(1);
+        }
+
+        // update stockAccount info // use purchase_price to update the stock account
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "MERGE INTO stockaccounts S\n" + //
+                                "USING (SELECT customer_id FROM customers WHERE customer_id = %d) C\n" + //
+                                "ON (S.customer_id = C.customer_id AND S.symbol = '%s' AND S.buy_price = %1.2f)\n" + //
+                                "WHEN MATCHED THEN UPDATE SET S.num_shares = S.num_shares + %1.2f\n" + //
+                                "WHEN NOT MATCHED THEN INSERT (S.customer_id, S.symbol, S.num_shares, S.buy_price) VALUES (C.customer_id, '%s', %1.2f, %1.2f)",
+                        customer_id, symbol, purchase_price, num_shares, symbol, num_shares, purchase_price
+                    )
+                )
+            ) {}
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: cancelBuy update stockAccount");
+            System.exit(1);
+        }
+
+        // takes money gained from the canceled sell + 20 for commission
+        withdrawal((sell_price * num_shares) + 20, false);
+        
+        Global.messageWithConfirm("Your most recent sell transaction has been canceled with $20 commission fee");
+    }
 }

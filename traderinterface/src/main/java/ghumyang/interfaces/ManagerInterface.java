@@ -533,7 +533,12 @@ public class ManagerInterface {
                                 "    FROM (\n" + //
                                 "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
                                 "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))"+
+                                "   AND T.transaction_id\n" + //
+                                "        NOT IN (\n" + //
+                                "            SELECT Z.transaction_canceled\n" + //
+                                "            FROM cancels Z\n" + //
+                                "            )\n" + //
                                 "        GROUP BY T.customer_id\n" + //
                                 "    \n" + //
                                 "        UNION ALL\n" + //
@@ -606,8 +611,6 @@ public class ManagerInterface {
             System.out.println("FAILED QUERY: generateCustomerReport");
             System.exit(1);
         }
-
-
 
     }
 
@@ -747,6 +750,8 @@ public class ManagerInterface {
             System.out.println("FAILED QUERY: deleteAllTransactions");
             System.exit(1);
         }
+
+        Global.messageWithConfirm("All transactions have been successfully deleted");
     }
 
 }
