@@ -19,6 +19,7 @@ public class Customer {
     @Getter int customer_id;
     @Getter double balance;
 
+    // constructor acts as a correct login, uses unique login info to query table for this customer
     public Customer(String username, String password) {
         try (Statement statement = Global.SQL.createStatement()) {
             try (
@@ -71,8 +72,6 @@ public class Customer {
         return true;
     }
 
-
-
     // query has no constraints, we assume all caught in application
     public void deposit(double amount, boolean shouldCreateTransaction) {
         try (Statement statement = Global.SQL.createStatement()) {
@@ -109,12 +108,13 @@ public class Customer {
             System.exit(1);
         }
         if (shouldCreateTransaction) {
-            // treat it as a negative deposit
+            // treat it as a negative deposit transaction in history
             createDepositWithdrawalTransaction(-1*amount);
         }
     }
 
     // helper function, only called if a deposit or a withdrawal is an actual transaction
+    // goal is to use deposit/withdrawal to as helper methods to update balance, but only actual deposit/withdrawal actions should call this function to add a record
     void createDepositWithdrawalTransaction(double amount) {
 
         // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to depositwithdraw table
@@ -136,9 +136,9 @@ public class Customer {
     /*
      * DESIGN: 
      * query stock for price
-     * withdraw that price*shares from the account
+     * withdraw that price*shares from the account +20 for commission
      * create transaction in buys
-     * create stock account if needed otherwise update
+     * create stock account if needed otherwise update existing
      */
     public void buyStock(String symbol, double count) throws IOException {
 
@@ -208,6 +208,14 @@ public class Customer {
 
     }
 
+    /*
+     * DESIGN: 
+     * query stock for price
+     * check if there is a stockaccount with the specificed buy price, symbol, enough shares
+     * update stock account (remove shares), if shares = 0 delete stock account
+     * deposit that price*shares from the account -20 commission
+     * create transaction in buys
+     */
     public void sellStock(String symbol, double count, double purchasedPrice) throws IOException {
 
         // ensure stock exists
@@ -313,8 +321,17 @@ public class Customer {
 
     }
 
+    /*
+     * DESIGN:
+     * check enough balance for commission
+     * gets the most recent transaction, checks to make sure it is a buy/sell
+     *     by extension can't cancel two transactions back to back, you can only cancel immediate prior
+     * call cancelBuy() or cancelSell() accordingly
+     * creates record in transactions (this also means the most recent transaction will be a cancel now, hindering you from canceling again in a row)
+     */
     public void cancelTransaction() throws IOException {
         
+        // ensure enough to pay commission
         if (20 > balance) {
             Global.messageWithConfirm("ERROR: not enough balance to make this cancellation");
             return;
@@ -427,6 +444,13 @@ public class Customer {
 
     }
     
+    /*
+     * DESIGN:
+     * pulls buy information
+     * removes shares in stockAccount (sells the specified number of shares)
+     * deletes stockAccount if num_shares = 0
+     * deposits back num_shares*purchase_price
+     */
     void cancelBuy(String transactionID) throws IOException {
         String symbol = "";
         double purchase_price = 0.0, num_shares = 0.0;
@@ -490,6 +514,15 @@ public class Customer {
 
     }
 
+    /*
+     * DESIGN:
+     * pulls sell information
+     * adds shares back to stockAccount
+     *     if needed, re-creates the stockAccount (if it were removed by the initial sell)
+     *     otherwise just updates num_shares
+     * withdraws num_shares*purchase_price and another 20 for commission
+     *     will never go negative, we check that there is $20 in the balance before even allowing a cancel
+     */
     void cancelSell(String transactionID) throws IOException {
         String symbol = "";
         double purchase_price = 0.0, sell_price = 0.0, num_shares = 0.0;

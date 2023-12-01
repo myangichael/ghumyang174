@@ -16,7 +16,7 @@ public class GeneralInterface {
 
         while (!input.equals("e")) {
 
-             // hard coded options
+            // hard coded options
             Global.clearScreen();
             System.out.println("Welcome to General Queries");
             System.out.println();
@@ -61,6 +61,7 @@ public class GeneralInterface {
 
         String symbol = fields.get("Symbol");
 
+        // query for this stock's info
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -74,7 +75,7 @@ public class GeneralInterface {
                     // no stock ticker with this information
                     Global.messageWithConfirm("ERROR: there is no stock with the ticker " + symbol);
                 } else {
-                    // stock exists
+                    // stock exists, print relevant info
                     String[] messages = new String[] {
                         "Stock Found!",
                         "",
@@ -111,6 +112,7 @@ public class GeneralInterface {
         String movieTitle = fields.get("Movie Title");
         String movieYear = fields.get("Year");
 
+        // query movie info with above fields
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -141,6 +143,7 @@ public class GeneralInterface {
             System.exit(1);
         }
 
+        // also pulls all contracts associated with the movie in another query
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -212,6 +215,7 @@ public class GeneralInterface {
         String movieTitle = fields.get("Movie Title");
         String movieYear = fields.get("Year");
 
+        // sql query
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -237,7 +241,7 @@ public class GeneralInterface {
                     return;
                 }
                     
-                // convert list to array
+                // convert list to array for output
                 String[] messages = new String[reviews.size()];
                 for (int i = 0; i < messages.length; i++) {
                     messages[i] = reviews.get(i);
@@ -254,6 +258,7 @@ public class GeneralInterface {
 
     }
 
+    // as specified, top movies have a perfect 10 rating
     static void getTopMovies() throws IOException {
         String title = "Top Movies Query";
 
@@ -317,6 +322,7 @@ public class GeneralInterface {
                 values.add(years);
                 values.add(ratings);
 
+                // use helper to format table nicely
                 String[] output = Global.tableToString(headers, values);
 
                 Global.messageWithConfirm("Top Movies from " + beginYear + " to " + endYear, output);

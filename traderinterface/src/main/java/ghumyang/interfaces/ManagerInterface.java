@@ -130,7 +130,7 @@ public class ManagerInterface {
             ArrayList<LocalDate> dateList = new ArrayList<>();
             ArrayList<Double> balanceList = new ArrayList<>();
 
-            // query for the last value before this month started, defaults to 0 if did not exist
+            // query for the last value before this month started, defaults to 0 if did not exist. This serves as an initial balance
             double balancePriorToStartOfMonth = 0;
             try (Statement statement = Global.SQL.createStatement()) {
                 try (
@@ -176,7 +176,7 @@ public class ManagerInterface {
 
             // Global.messageWithConfirm("balance history for " + customer_id,new String[] {"beforeMonthBalance: " + balancePriorToStartOfMonth, dateList.toString(), balanceList.toString()});
 
-            // calculates amount of interest to add:
+            // this calculates amount of interest to add:
 
             double curBalance = balancePriorToStartOfMonth;
             double totalBalance = 0;
@@ -222,10 +222,10 @@ public class ManagerInterface {
                 System.exit(1);
             }
 
-            // create the accrue value transaction
+            // create the transaction id
             int transaction_id = Global.createTransactionAndReturnItsID(customer_id);
 
-            // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to accrue interest
+            // adds the most recent transaction_id (immediate prior insertion) and adds to accrue interest
             try (Statement statement = Global.SQL.createStatement()) {
                 try (
                     ResultSet resultSet = statement.executeQuery(
@@ -245,6 +245,8 @@ public class ManagerInterface {
     }
 
     static void generateMonthlyStatement() throws IOException {
+
+        // stores transactions sorted by transaction_id for output
         TreeMap<Integer, String> queries = new TreeMap<>();
 
         // start and end of current month
@@ -292,6 +294,7 @@ public class ManagerInterface {
             System.exit(1);
         }
 
+        // almost identical to customer transaction history function
         String message = "";
         try (Statement statement = Global.SQL.createStatement()) {
             // gets and records the withdraw/deposit transactions for this customer
@@ -408,6 +411,7 @@ public class ManagerInterface {
             String email_address = "null";
             String balance = "0";
 
+            // queries for customer information specified by requirements
             try (
                 ResultSet resultSet = statement.executeQuery(
                     "SELECT username, email_address, balance FROM customers C WHERE C.customer_id = " + customer_id
@@ -424,6 +428,7 @@ public class ManagerInterface {
                 System.exit(1);
             }
 
+            // outputting additional information
             String bonus = "Monthly Report for: " + username + " | " + email_address + "\n" +
             "Initial balance: " + initialBalancePriorToStartOfMonth + " | Current balance: " + balance;
 
@@ -432,6 +437,7 @@ public class ManagerInterface {
                 transactionList.add(message);
             }
 
+            // converting all entries to String[] for method output
             String[] messageArray = new String[transactionList.size()];
 
             for (int i = 0; i < messageArray.length; i++) {
@@ -448,6 +454,8 @@ public class ManagerInterface {
     }
 
     static void listActiveCustomers() throws IOException {
+        
+        // calculate start and end date from which to calculate shares traded
         Calendar calendar = new GregorianCalendar();
         calendar.setTime(Global.CURRENT_DATE);
 
@@ -456,6 +464,7 @@ public class ManagerInterface {
         calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = new Date(calendar.getTimeInMillis());
 
+        // queries all users who traded more than 1000 shares
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -530,7 +539,8 @@ public class ManagerInterface {
     }
 
     static void generateGDTEReport() throws IOException {
-        // check if last day of month
+
+        // check if last day of month, if not returns
         Calendar calendarDate = new GregorianCalendar();
         calendarDate.setTime(Global.CURRENT_DATE);
         if (calendarDate.get(Calendar.DAY_OF_MONTH) != calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH)) {
@@ -544,14 +554,13 @@ public class ManagerInterface {
             return;
         }
 
+        // get start and end date to create report
         Calendar calendar = new GregorianCalendar();
         calendar.setTime(Global.CURRENT_DATE);
-
         calendar.set(Calendar.DAY_OF_MONTH,1);
         Date startDate = new Date(calendar.getTimeInMillis());
         calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = new Date(calendar.getTimeInMillis());
-
 
         try (Statement statement = Global.SQL.createStatement()) {
             try (
@@ -771,7 +780,6 @@ public class ManagerInterface {
             System.exit(1);
         }
                    
-                
     }
 
     static void deleteAllTransactions() throws IOException {
@@ -793,6 +801,8 @@ public class ManagerInterface {
             );  
             return;
         }
+
+        // simple query, deletes all — all tables using transaction_id have ON DELETE CASCADE so no issues
         try (Statement statement = Global.SQL.createStatement()) {
             try (
                 ResultSet resultSet = statement.executeQuery(

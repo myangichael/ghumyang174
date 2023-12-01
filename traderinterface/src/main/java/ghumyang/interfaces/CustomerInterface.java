@@ -109,6 +109,7 @@ public class CustomerInterface {
 
         double amount = Double.valueOf(fields.get("Amount"));
 
+        // ensure value is not negative
         if (amount < 0) {
             Global.messageWithConfirm("ERROR: cannot deposit negative money");
             return;
@@ -152,7 +153,7 @@ public class CustomerInterface {
 
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
-            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+            Global.messageWithConfirm("ERROR: Sorry, the market is closed and you cannot take this action");
             return;
         }
 
@@ -188,7 +189,7 @@ public class CustomerInterface {
 
         // ensure market is open
         if (!Global.MARKET_IS_OPEN) {
-            Global.messageWithConfirm("Sorry, the market is closed and you cannot take this action");
+            Global.messageWithConfirm("ERROR: Sorry, the market is closed and you cannot take this action");
             return;
         }
 
@@ -231,6 +232,7 @@ public class CustomerInterface {
     }
 
     static void showBalance(Customer customer) throws IOException {
+
         // prints balance across all stock accounts belonging to this market account from query
         System.out.println("YOUR BALANCE IS: " + customer.getBalance());
 
@@ -295,6 +297,7 @@ public class CustomerInterface {
                 values.add(curValues);
                 values.add(changes);
 
+                // uses helper function to output properly formatted table values
                 String[] output = Global.tableToString(headers, values);
 
                 Global.messageWithConfirm("Your user balance", output);
@@ -309,6 +312,7 @@ public class CustomerInterface {
     static void monthTransactionHistory(Customer customer) throws IOException {
         // prints all transactions of this month from query
 
+        // treemap will stores queries and sort them in order by transaction_id (which is chronological order)
         TreeMap<Integer, String> queries = new TreeMap<>();
 
         // start and end of current month
@@ -320,9 +324,7 @@ public class CustomerInterface {
         calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = new Date(calendar.getTimeInMillis());
 
-
         String customer_id = Integer.toString(customer.getCustomer_id());
-
 
         String message = "";
         message = "This current month's transaction history is listed below: ";
@@ -445,6 +447,7 @@ public class CustomerInterface {
                 transactionList.add(message);
             }
 
+            // assign transactionlist to String[] for message method
             String[] messageArray = new String[transactionList.size()];
 
             for (int i = 0; i < messageArray.length; i++) {
@@ -461,7 +464,7 @@ public class CustomerInterface {
     }
 
     static void displayInfo(Customer customer) throws IOException {
-        // prints below info
+        // prints below info, info is already loaded for this object
         String[] userInfo = new String[] {
             "Your Personal Information",
             "",

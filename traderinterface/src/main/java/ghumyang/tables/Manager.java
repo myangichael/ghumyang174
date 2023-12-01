@@ -18,6 +18,7 @@ public class Manager {
     @Getter String password;
     @Getter int manager_id;
 
+    // constructor acts as a correct login, uses unique login info to query table for this manager
     public Manager(String username, String password) {
         try (Statement statement = Global.SQL.createStatement()) {
             try (
