@@ -527,7 +527,7 @@ public class ManagerInterface {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT random.cid AS cid, C.username AS username, C.name AS name, C.email_address AS email_address, random.net_profit AS net_profit\n" + //
+                        "SELECT random.cid AS cid, C.username AS username, C.name AS name, C.email_address AS email_address, C.state AS state, random.net_profit AS net_profit\n" + //
                                 "FROM (\n" + //
                                 "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
                                 "    FROM (\n" + //
@@ -571,12 +571,14 @@ public class ManagerInterface {
                 headers.add("name");
                 headers.add("email_address");
                 headers.add("net_profit");
+                headers.add("state");
         
                 ArrayList<String> CIDs = new ArrayList<>();
                 ArrayList<String> usernames = new ArrayList<>();
                 ArrayList<String> names = new ArrayList<>();
                 ArrayList<String> emails = new ArrayList<>();
                 ArrayList<String> profits = new ArrayList<>();
+                ArrayList<String> states = new ArrayList<>();
         
                 // adding results to array for output process
                 while (resultSet.next()) {
@@ -585,6 +587,7 @@ public class ManagerInterface {
                     names.add(resultSet.getString("name"));
                     emails.add(resultSet.getString("email_address"));
                     profits.add(resultSet.getString("net_profit"));
+                    states.add(resultSet.getString("state"));
                 }
         
                 if (CIDs.size() == 0) {
@@ -599,6 +602,7 @@ public class ManagerInterface {
                 values.add(names);
                 values.add(emails);
                 values.add(profits);
+                values.add(states);
         
                 String[] output = Global.tableToString(headers, values);
 
