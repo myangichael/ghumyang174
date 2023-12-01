@@ -345,7 +345,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT MAX(T.transaction_id) AS maxID FROM transactions T"
+                        "SELECT MAX(T.transaction_id) AS maxID FROM transactions T WHERE T.customer_id = "+ customer_id
                     )
                 )
             ) {
@@ -370,7 +370,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT MAX(B.transaction_id) AS maxID FROM buys B"
+                        "SELECT MAX(B.transaction_id) AS maxID FROM buys B WHERE B.transaction_id IN (SELECT T.transaction_id FROM transactions T WHERE T.customer_id = "+ customer_id+")"
                     )
                 )
             ) {
@@ -385,7 +385,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT MAX(S.transaction_id) AS maxID FROM sells S"
+                        "SELECT MAX(S.transaction_id) AS maxID FROM sells S WHERE S.transaction_id IN (SELECT T.transaction_id FROM transactions T WHERE T.customer_id = " + customer_id+")"
                     )
                 )
             ) {
@@ -434,7 +434,7 @@ public class Customer {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "INSERT INTO cancels (transaction_id, transaction_canceled) VALUES (%d, %d)",
+                        "INSERT INTO cancels (transaction_id, transaction_canceled) VALUES (%d, %s)",
                         newTransactionId, canceledTransactionId
                     )
                 )
