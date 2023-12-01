@@ -229,7 +229,7 @@ public class ManagerInterface {
             try (Statement statement = Global.SQL.createStatement()) {
                 try (
                     ResultSet resultSet = statement.executeQuery(
-                        "INSERT INTO accrueinterests (transaction_id) VALUES ("+transaction_id+")"
+                        "INSERT INTO accrueinterests (transaction_id, amount) VALUES ("+transaction_id+", "+toDeposit+")"
                     )
                 ) { }
             } catch (Exception e) {
