@@ -16,7 +16,7 @@ public class Manager {
     @Getter String tax_id;
     @Getter String username;
     @Getter String password;
-    @Getter int customer_id;
+    @Getter int manager_id;
     @Getter double balance;
 
     public Manager(String username, String password) {
@@ -37,7 +37,7 @@ public class Manager {
                 this.tax_id = resultSet.getString("tax_id");
                 this.username = resultSet.getString("username");
                 this.password = resultSet.getString("password");
-                this.customer_id = Integer.parseInt(resultSet.getString("customer_id"));
+                this.manager_id = Integer.parseInt(resultSet.getString("manager_id"));
                 this.balance = Double.parseDouble(resultSet.getString("balance"));
             }
         } catch (Exception e) {

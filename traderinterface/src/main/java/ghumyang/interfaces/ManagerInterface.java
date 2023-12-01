@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import ghumyang.Global;
-import ghumyang.tables.Customer;
 import ghumyang.tables.Manager;
 
 public class ManagerInterface {
@@ -91,7 +90,6 @@ public class ManagerInterface {
                     "You cannot add interest today."
                 }
             ); 
-            // TODO: CHANGE THIS BACK  
             return;
         }
 
