@@ -361,7 +361,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy  | Symbol: " + resultSet.getString("symbol")
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy    | Symbol: " + resultSet.getString("symbol")
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
@@ -383,7 +383,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell | Symbol: " + resultSet.getString("symbol")
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell   | Symbol: " + resultSet.getString("symbol")
                     + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Sell Price: " + resultSet.getString("sell_price")
                     + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
@@ -419,7 +419,7 @@ public class CustomerInterface {
             try (
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
-                        "SELECT T.transaction_id AS tid, T.transaction_date AS xdate\n" + //
+                        "SELECT T.transaction_id AS tid, A.amount as amount, T.transaction_date AS xdate\n" + //
                         "FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
                         "WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id='%s'", 
                         startDate, endDate, customer_id
@@ -427,7 +427,7 @@ public class CustomerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest      | Amount: " + String.format("%18.2f", resultSet.getDouble("amount"));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
