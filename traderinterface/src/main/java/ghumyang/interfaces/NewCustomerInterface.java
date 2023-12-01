@@ -4,17 +4,14 @@ import java.io.IOException;
 
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Connection;
 import java.sql.ResultSet;
 
-import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 import ghumyang.Global;
-import oracle.net.aso.l;
 
 public class NewCustomerInterface {
 

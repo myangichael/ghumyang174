@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -53,7 +58,6 @@ public class ManagerInterface {
 
             input = Global.getLineSetInputs(new ArrayList<>(Arrays.asList("0","1","2","3","4","5","e"))); // get input
 
-            // TODO: add switch statement to handle input
             switch (input) {
                 case "0":
                     addInterest();
@@ -89,10 +93,159 @@ public class ManagerInterface {
                     "The last day of the month is: " + calendarDate.getActualMaximum(Calendar.DAY_OF_MONTH),
                     "You cannot add interest today."
                 }
-            );   
+            ); 
+            // TODO: CHANGE THIS BACK  
             return;
         }
-        // TODO
+
+        // get desired start and end date
+        Calendar calendar = new GregorianCalendar();
+        calendar.setTime(Global.CURRENT_DATE);
+        calendar.set(Calendar.DAY_OF_MONTH,1);
+        LocalDate startDate = LocalDateTime.ofInstant(calendar.toInstant(), ZoneId.systemDefault()).toLocalDate();
+        calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+        LocalDate endDate = LocalDateTime.ofInstant(calendar.toInstant(), ZoneId.systemDefault()).toLocalDate();
+
+        Global.messageWithConfirm("Start Date: " + startDate.toString() + ", End Date: " + endDate.toString());
+
+        ArrayList<Integer> customerIDList = new ArrayList<>();
+
+        // get list of all customer ids
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "SELECT customer_id FROM customers C"
+                )
+            ) {
+                while (resultSet.next()) {
+                    int local_id = Integer.parseInt(resultSet.getString("customer_id"));
+                    customerIDList.add(local_id);
+                    // simultaneously update their balance history for this day (last of month)
+                    Global.updateBalanceHistory(local_id);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: addInterest get customer list");
+            System.exit(1);
+        }
+
+        // for each customer,
+        for (int customer_id : customerIDList) {
+
+            ArrayList<LocalDate> dateList = new ArrayList<>();
+            ArrayList<Double> balanceList = new ArrayList<>();
+
+            // query for the last value before this month started, defaults to 0 if did not exist
+            double balancePriorToStartOfMonth = 0;
+            try (Statement statement = Global.SQL.createStatement()) {
+                try (
+                    ResultSet resultSet = statement.executeQuery(
+                        "SELECT B.balance\n" + //
+                                "FROM balancehistories B\n" + //
+                                "WHERE B.record_date IN (\n" + //
+                                "    SELECT MAX(record_date)\n" + //
+                                "    FROM balancehistories C\n" + //
+                                "    WHERE C.record_date < TO_DATE('"+startDate.toString()+"', 'YYYY-MM-DD')\n" + //
+                                "    AND C.customer_id = "+customer_id+"\n" + //
+                                ") AND B.customer_id = "+customer_id
+                    )
+                ) {
+                    while (resultSet.next()) {
+                        balancePriorToStartOfMonth = Double.parseDouble(resultSet.getString("balance"));
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: addInterest get balance prior to start of month");
+                System.exit(1);
+            }
+
+            // query for a list of all dates and balances in the time period
+            try (Statement statement = Global.SQL.createStatement()) {
+                try (
+                    ResultSet resultSet = statement.executeQuery(
+                        "SELECT balance, TO_CHAR(record_date,'YYYY-MM-DD') AS record_date \n" + //
+                                "FROM balancehistories\n" + //
+                                "WHERE customer_id = "+customer_id+" AND record_date >= TO_DATE('" +startDate.toString()+ "', 'YYYY-MM-DD') AND record_date <= TO_DATE('" +endDate.toString()+"', 'YYYY-MM-DD')\n" + //
+                                "ORDER BY record_date ASC"
+                    )
+                ) {
+                    while (resultSet.next()) {
+                        dateList.add(LocalDate.parse(resultSet.getString("record_date")));
+                        balanceList.add(Double.parseDouble(resultSet.getString("balance")));
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: addInterest list of dates and balances for this person");
+                System.exit(1);
+            }
+
+            // Global.messageWithConfirm("balance history for " + customer_id,new String[] {"beforeMonthBalance: " + balancePriorToStartOfMonth, dateList.toString(), balanceList.toString()});
+
+            // calculates amount of interest to add:
+
+            double curBalance = balancePriorToStartOfMonth;
+            double totalBalance = 0;
+            int index = 0;
+            int days = 0;
+            int totalDays = 0;
+            LocalDate dateIterator;
+
+            for (dateIterator = startDate; dateIterator.isBefore(endDate) || dateIterator.isEqual(endDate); dateIterator = dateIterator.plusDays(1)) {
+                if (index < dateList.size() && dateIterator.isEqual(dateList.get(index))) {
+                    // Global.messageWithConfirm("hit match on day " + dateIterator.toString() + ", " + days + " have elapsed prior to this with balance " + curBalance);
+                    // add to count
+                    totalBalance += curBalance * days;
+                    curBalance = balanceList.get(index);
+                    index++;
+                    days = 0;
+                }
+                days++;
+                totalDays++;
+            }
+            totalBalance += curBalance * days;
+            // Global.messageWithConfirm("ended month at " + dateIterator.toString() + ", " + days + " have elapsed prior to this with balance " + curBalance);
+
+            Double toDeposit = (totalBalance / totalDays) * 0.02;
+
+            // Global.messageWithConfirm(new String[] {
+            //     "totalDays:  " + totalDays,
+            //     "averageBalance: " + toDeposit
+            // });
+            
+            // deposits the value into the account
+            try (Statement statement = Global.SQL.createStatement()) {
+                try (
+                    ResultSet resultSet = statement.executeQuery(
+                        String.format(
+                            "UPDATE customers C SET balance = balance + %1.2f WHERE C.customer_id = %d", 
+                            toDeposit, customer_id
+                        )
+                    )
+                ) { }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: addInterest deposit the value");
+                System.exit(1);
+            }
+
+            // create the accrue value transaction
+            int transaction_id = Global.createTransactionAndReturnItsID(customer_id);
+
+            // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to accrue interest
+            try (Statement statement = Global.SQL.createStatement()) {
+                try (
+                    ResultSet resultSet = statement.executeQuery(
+                        "INSERT INTO accrueinterests (transaction_id) VALUES ("+transaction_id+")"
+                    )
+                ) { }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: addInterest create transaction");
+                System.exit(1);
+            }
+
+            // now update balance history for today
+            Global.updateBalanceHistory(customer_id);
+
+        }
     }
 
     static void generateMonthlyStatement() throws IOException {
@@ -107,38 +260,20 @@ public class ManagerInterface {
         calendar.set(Calendar.DAY_OF_MONTH,calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = new Date(calendar.getTimeInMillis());
 
-
         String title = "Monthly Statement";
+
+        // prompt for user id
         LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Customer ID")));
         String customer_id = fields.get("Customer ID");
 
+        // validate input
+        if (!Global.isInteger(customer_id)) {
+            Global.messageWithConfirm("ERROR: customer id is an invalid integer");
+            return;
+        }
 
         String message = "";
         try (Statement statement = Global.SQL.createStatement()) {
-            // gets and records the customers information
-            try (
-                ResultSet resultSet = statement.executeQuery(
-                    String.format(
-                        "SELECT name, email_address FROM Customers C WHERE C.customer_id='%s'", 
-                        customer_id
-                    )
-                )
-            ) {
-                if (!resultSet.next()) {
-                    // no customer with the provided id
-                    Global.messageWithConfirm("ERROR: there is no customer with the id " + customer_id);
-                    return;
-                } else {
-                    // customer exists
-                    message = "Customer: " + resultSet.getString("name") + " | Email: " + resultSet.getString("email_address");
-                    queries.put(-1, message);
-                }
-            } catch(Exception e) {
-                System.out.println("FAILED QUERY: printing top");
-                e.printStackTrace();
-                System.exit(1);
-            }
-
             // gets and records the withdraw/deposit transactions for this customer
             try (
                 ResultSet resultSet = statement.executeQuery(
@@ -151,7 +286,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Deposit/Withdrawal, " + "Date: " + resultSet.getDate("xdate").toString() + ", Amount: " + resultSet.getString("amount");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Deposit/Withdrawal | Amount: " + String.format("%18d", Integer.parseInt(resultSet.getString("amount")));
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -172,8 +307,8 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Buy, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Number of Shares " + resultSet.getString("num_shares");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Buy  | Symbol: " + resultSet.getString("symbol")
+                    + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -194,9 +329,9 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Sell, " + "Date: " + resultSet.getDate("xdate").toString() + ", Symbol: " + resultSet.getString("symbol")
-                    + ", Purchase Price: " + resultSet.getString("purchase_price") + ", Sell Price: " + resultSet.getString("sell_price")
-                    + ", Number of Shares " + resultSet.getString("num_shares");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Sell | Symbol: " + resultSet.getString("symbol")
+                    + " | Purchase Price: " + String.format("%10.2f", Double.parseDouble(resultSet.getString("purchase_price"))) + " | Sell Price: " + resultSet.getString("sell_price")
+                    + " | Number of Shares: " + resultSet.getString("num_shares");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -217,7 +352,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Cancel, " + "Date: " + resultSet.getDate("xdate").toString() + ", Transaction Cancelled: " + resultSet.getString("tc");
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Cancel | CancelID: " + resultSet.getString("tc");
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -238,7 +373,7 @@ public class ManagerInterface {
                 )
             ) {
                 while (resultSet.next()) {
-                    message = "Transaction Type: Accrue Interest, " + "Date: " + resultSet.getDate("xdate").toString();
+                    message = "Date: " + resultSet.getDate("xdate").toString() + " | Accrue Interest ";
                     queries.put(Integer.parseInt(resultSet.getString("tid")), message);
                 }
             } catch(Exception e) {
@@ -248,9 +383,25 @@ public class ManagerInterface {
             }
 
             ArrayList<String> transactionList = new ArrayList<>();
+            
+            String username = "null";
 
-            Map.Entry<Integer,String> temp = queries.pollFirstEntry();
-            String bonus = temp.getValue(); // TODO: shouldn't be an error of empty treemap, since no customer is caught earlier, just check
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    "SELECT username FROM customers C WHERE C.customer_id = " + customer_id
+                )
+            ) {
+                while (resultSet.next()) {
+                    username = resultSet.getString("username");
+                }
+            } catch(Exception e) {
+                System.out.println("FAILED QUERY: get username");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            String bonus = "Monthly Report for: " + username;
+
             for (Map.Entry<Integer,String> entry : queries.entrySet()) {
                 message = entry.getKey() + " : " + entry.getValue();
                 transactionList.add(message);
@@ -269,8 +420,6 @@ public class ManagerInterface {
             System.exit(1);
         }
 
-
-
     }
 
     static void listActiveCustomers() throws IOException {
@@ -282,13 +431,110 @@ public class ManagerInterface {
     }
 
     static void generateCustomerReport() throws IOException {
+
+        // prompt for user id
         String title = "Customer Report";
-        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Username")));
-        if (fields.get("Username").equals("")) {
-            Global.messageWithConfirm("ERROR: inputted username is empty");
+        LinkedHashMap<String,String> fields = Global.promptValues(title, new ArrayList<>(Arrays.asList("Customer ID")));
+        
+        // validate input
+        if (!Global.isInteger(fields.get("Customer ID"))) {
+            Global.messageWithConfirm("ERROR: customer id is an invalid integer");
             return;
         }
-        // TODO
+
+        int customer_id = Integer.parseInt(fields.get("Customer ID"));
+
+        // prints balance across all stock accounts belonging to this market account from query
+        try (Statement statement = Global.SQL.createStatement()) {
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT \n" + //
+                        "    A.symbol,\n" + //
+                        "    A.num_shares,\n" + //
+                        "    A.buy_price,\n" + //
+                        "    S.current_price,\n" + //
+                        "    A.num_shares * S.current_price AS current_value,\n" + //
+                        "    (A.num_shares * S.current_price) - (A.num_shares * A.buy_price) AS change\n" + //
+                        "FROM \n" + //
+                        "    stockaccounts A\n" + //
+                        "INNER JOIN \n" + //
+                        "    stocks S ON A.symbol = S.symbol\n" + //
+                        "WHERE \n" + //
+                        "    A.customer_id = %d", 
+                        customer_id
+                    )
+                )
+            ) {
+                // store headers for output
+                ArrayList<String> headers = new ArrayList<>();
+                headers.add("Symbol");
+                headers.add("Shares");
+                headers.add("Buy Price");
+                headers.add("Current Price");
+                headers.add("Value");
+                headers.add("Change");
+        
+                ArrayList<String> symbols = new ArrayList<>();
+                ArrayList<String> shareCounts = new ArrayList<>();
+                ArrayList<String> buyPrices = new ArrayList<>();
+                ArrayList<String> curPrices = new ArrayList<>();
+                ArrayList<String> curValues = new ArrayList<>();
+                ArrayList<String> changes = new ArrayList<>();
+        
+                // adding results to array for output process
+                while (resultSet.next()) {
+                    symbols.add(resultSet.getString("symbol"));
+                    shareCounts.add(resultSet.getString("num_shares"));
+                    buyPrices.add(resultSet.getString("buy_price"));
+                    curPrices.add(resultSet.getString("current_price"));
+                    curValues.add(resultSet.getString("current_value"));
+                    changes.add(resultSet.getString("change"));
+                }
+        
+                if (symbols.size() == 0) {
+                    Global.messageWithConfirm("No stocks in your balance");
+                    return;
+                }
+        
+                // create large array for output process
+                ArrayList<ArrayList<String>> values = new ArrayList<>();
+                values.add(symbols);
+                values.add(shareCounts);
+                values.add(buyPrices);
+                values.add(curPrices);
+                values.add(curValues);
+                values.add(changes);
+        
+                String[] output = Global.tableToString(headers, values);
+
+                String username = "null";
+
+                try (
+                    ResultSet secondResultSet = statement.executeQuery(
+                        "SELECT username FROM customers C WHERE C.customer_id = " + customer_id
+                    )
+                ) {
+                    while (secondResultSet.next()) {
+                        username = secondResultSet.getString("username");
+                    }
+                } catch(Exception e) {
+                    System.out.println("FAILED QUERY: get username");
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+
+                String bonus = "Accounts Owned By " + username;
+        
+                Global.messageWithConfirm(bonus, output);
+        
+            }
+        } catch (Exception e) {
+            System.out.println("FAILED QUERY: generateCustomerReport");
+            System.exit(1);
+        }
+                   
+                
     }
 
     static void deleteAllTransactions() throws IOException {

@@ -71,21 +71,7 @@ public class Customer {
         return true;
     }
 
-    public void updateBalanceHistory() throws IOException {
-        try (Statement statement = Global.SQL.createStatement()) {
-            try (
-                ResultSet resultSet = statement.executeQuery(
-                    String.format(
-                        "MERGE INTO balancehistories B USING (SELECT customer_id, balance FROM customers WHERE customer_id = %s) S ON (B.customer_id = S.customer_id AND B.record_date=TO_DATE('%s', 'YYYY-MM-DD')) WHEN MATCHED THEN UPDATE SET B.balance = S.balance WHEN NOT MATCHED THEN INSERT (B.customer_id,B.balance,B.record_date) VALUES (S.customer_id,S.balance,TO_DATE('%s', 'YYYY-MM-DD'))", 
-                        customer_id, Global.CURRENT_DATE.toString(),Global.CURRENT_DATE.toString()
-                    )
-                )
-            ) {}
-        } catch (Exception e) {
-            System.out.println("FAILED QUERY: updateBalanceHistory");
-            System.exit(1);
-        }
-    }
+
 
     // query has no constraints, we assume all caught in application
     public void deposit(double amount, boolean shouldCreateTransaction) {
@@ -137,7 +123,7 @@ public class Customer {
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
                         "INSERT INTO depositwithdrawal (transaction_id, amount) VALUES (%d, %s)", 
-                        createTransactionAndReturnItsID(), String.valueOf(amount)
+                        Global.createTransactionAndReturnItsID(customer_id), String.valueOf(amount)
                     )
                 )
             ) { }
@@ -145,43 +131,6 @@ public class Customer {
             System.out.println("FAILED QUERY: createDepositWithdrawalTransaction 1");
             System.exit(1);
         }
-    }
-    
-    // helper function used for every transaction
-    int createTransactionAndReturnItsID() {
-
-        // adds a new transaction into transactions table
-        try (Statement statement = Global.SQL.createStatement()) {
-            try (
-                ResultSet resultSet = statement.executeQuery(
-                    String.format(
-                        "INSERT INTO transactions (customer_id,transaction_date) VALUES (%s, TO_DATE('%s', 'YYYY-MM-DD'))", 
-                        String.valueOf(customer_id), Global.CURRENT_DATE.toString()
-                    )
-                )
-            ) { }
-        } catch (Exception e) {
-            System.out.println("FAILED QUERY: createTransactionAndReturnItsID 1");
-            System.exit(1);
-        }
-
-        // queries for and returns its ID
-        try (Statement statement = Global.SQL.createStatement()) {
-            try (
-                ResultSet resultSet = statement.executeQuery(
-                "SELECT MAX(C.transaction_id) AS id FROM transactions C"
-                )
-            ) {
-                if (resultSet.next()) {
-                    return Integer.parseInt(resultSet.getString("id"));
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("FAILED QUERY: createTransactionAndReturnItsID 2");
-            System.exit(1);
-        }
-
-        return -1;
     }
 
     /*
@@ -218,7 +167,7 @@ public class Customer {
             return;
         }
 
-        int transactionId = createTransactionAndReturnItsID();
+        int transactionId = Global.createTransactionAndReturnItsID(customer_id);
 
         // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to buys table
         try (Statement statement = Global.SQL.createStatement()) {
@@ -342,7 +291,7 @@ public class Customer {
             System.exit(1);
         }
 
-        int transactionId = createTransactionAndReturnItsID();
+        int transactionId = Global.createTransactionAndReturnItsID(customer_id);
 
         // creates a transaction then selects the most recent transaction_id (immediate prior insertion) and adds to sells table
         try (Statement statement = Global.SQL.createStatement()) {
