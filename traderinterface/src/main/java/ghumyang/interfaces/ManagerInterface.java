@@ -539,8 +539,9 @@ public class ManagerInterface {
 
     static void deleteAllTransactions() throws IOException {
         // can only be done when market is closed
-        if (!Global.MARKET_IS_OPEN) {
+        if (Global.MARKET_IS_OPEN) {
             Global.messageWithConfirm("ERROR: market is still open");
+            return;
         }
         // can only be done on the first of a month
         Calendar calendarDate = new GregorianCalendar();
