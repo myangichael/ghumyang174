@@ -428,9 +428,122 @@ public class ManagerInterface {
                 System.exit(1);
             }
 
+            String commission_paid = "0";
+            // queries for number of transactions
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT SUM(20*temp.num_transactions) AS commission_paid\n" + //
+                        "FROM (\n" + //
+                        "    -- Number of buy transactions\n" + //
+                        "    SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "    FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                        "    WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "    GROUP BY T.customer_id\n" + //
+                        "    UNION ALL\n" + //
+                        "    -- Number of sell transactions\n" + //
+                        "    SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "    FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "    WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "    GROUP BY T.customer_id\n" + //
+                        "    UNION ALL\n" + //
+                        "    -- Number of cancel transactions\n" + //
+                        "    SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "    FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
+                        "    WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "    GROUP BY T.customer_id\n" + //
+                        ") temp\n" + //
+                        "GROUP BY temp.cid",
+                        startDate, endDate, customer_id, startDate, endDate, customer_id, startDate, endDate, customer_id
+                    )
+                )
+            ) {
+                while (resultSet.next()) {
+                    commission_paid = resultSet.getString("commission_paid");
+                }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: get commissions paid");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            // getting net profit/loss including commissions (old DTER code)
+            String net_profit = "0";
+
+            // query for net profit of a customer
+            try (
+                ResultSet resultSet = statement.executeQuery(
+                    String.format(
+                        "SELECT random.cid, C.username, C.name, C.email_address, C.state, random.net_profit\n" + //
+                        "FROM (\n" + //
+                        "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
+                        "    FROM (\n" + //
+                        "        -- actual money made by sells (or lost represented as negative)\n" + //
+                        "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
+                        "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "        AND T.transaction_id\n" + //
+                        "        NOT IN (\n" + //
+                        "            SELECT Z.transaction_canceled\n" + //
+                        "            FROM cancels Z\n" + //
+                        "        )\n" + //
+                        "        GROUP BY T.customer_id\n" + //
+
+                        "        UNION ALL\n" + //
+
+                        "        -- transaction fees\n" + //
+                        "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
+                        "        FROM (\n" + //
+                        "            -- Number of buy transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "            UNION ALL\n" + //
+                        "            -- Number of sell transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "            UNION ALL\n" + //
+                        "            -- Number of cancel transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD')) AND T.customer_id=%s\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "        ) temp\n" + //
+                        "        GROUP BY temp.cid\n" + //
+
+                        "        UNION ALL\n" + //
+
+                        "        -- interest\n" + //
+                        "        SELECT T.customer_id AS cid, SUM(A.amount) AS profit\n" + //
+                        "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
+                        "        WHERE T.customer_id=%s" + //
+                        "        GROUP BY T.customer_id\n" + //
+
+                        "    ) finalTable\n" + //
+                        "    GROUP BY finalTable.cid\n" + //
+                        // "    HAVING SUM(finalTable.profit) > 10000\n" + //
+                        ") random INNER JOIN Customers C ON random.cid=C.customer_id",
+                        startDate, endDate, customer_id, startDate, endDate, customer_id, startDate, endDate, customer_id, startDate, endDate, customer_id, customer_id
+                    )
+                )
+            ) {
+                while (resultSet.next()) {
+                    net_profit = resultSet.getString("net_profit");           
+                }
+            } catch (Exception e) {
+                System.out.println("FAILED QUERY: get username");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
             // outputting additional information
             String bonus = "Monthly Report for: " + username + " | " + email_address + "\n" +
-            "Initial balance: " + initialBalancePriorToStartOfMonth + " | Current balance: " + balance;
+            "Initial balance: " + initialBalancePriorToStartOfMonth + " | Current balance: " + balance + "\n" +
+            "Total paid in commissions this month: " + commission_paid + "\n" +
+            "Net profit this month: " + net_profit;
 
             for (Map.Entry<Integer,String> entry : queries.entrySet()) {
                 message = entry.getKey() + " : " + entry.getValue();
@@ -567,57 +680,57 @@ public class ManagerInterface {
                 ResultSet resultSet = statement.executeQuery(
                     String.format(
                         "SELECT random.cid, C.username, C.name, C.email_address, C.state, random.net_profit\n" + //
-                                "FROM (\n" + //
-                                "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
-                                "    FROM (\n" + //
-                                "        -- actual money made by sells (or lost represented as negative)\n" + //
-                                "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
-                                "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "        AND T.transaction_id\n" + //
-                                "        NOT IN (\n" + //
-                                "            SELECT Z.transaction_canceled\n" + //
-                                "            FROM cancels Z\n" + //
-                                "        )\n" + //
-                                "        GROUP BY T.customer_id\n" + //
+                        "FROM (\n" + //
+                        "    SELECT finalTable.cid AS cid, SUM(finalTable.profit) AS net_profit\n" + //
+                        "    FROM (\n" + //
+                        "        -- actual money made by sells (or lost represented as negative)\n" + //
+                        "        SELECT T.customer_id AS cid, SUM(S.num_shares * (S.sell_price - S.purchase_price)) AS profit\n" + //
+                        "        FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "        WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "        AND T.transaction_id\n" + //
+                        "        NOT IN (\n" + //
+                        "            SELECT Z.transaction_canceled\n" + //
+                        "            FROM cancels Z\n" + //
+                        "        )\n" + //
+                        "        GROUP BY T.customer_id\n" + //
 
-                                "        UNION ALL\n" + //
+                        "        UNION ALL\n" + //
 
-                                "        -- transaction fees\n" + //
-                                "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
-                                "        FROM (\n" + //
-                                "            -- Number of buy transactions\n" + //
-                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                                "            FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
-                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "            GROUP BY T.customer_id\n" + //
-                                "            UNION ALL\n" + //
-                                "            -- Number of sell transactions\n" + //
-                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                                "            FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
-                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "            GROUP BY T.customer_id\n" + //
-                                "            UNION ALL\n" + //
-                                "            -- Number of cancel transactions\n" + //
-                                "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
-                                "            FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
-                                "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
-                                "            GROUP BY T.customer_id\n" + //
-                                "        ) temp\n" + //
-                                "        GROUP BY temp.cid\n" + //
+                        "        -- transaction fees\n" + //
+                        "        SELECT temp.cid AS cid, SUM(-20*temp.num_transactions) AS profit --this profit is considered\n" + //
+                        "        FROM (\n" + //
+                        "            -- Number of buy transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN buys B ON T.transaction_id=B.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "            UNION ALL\n" + //
+                        "            -- Number of sell transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN sells S ON T.transaction_id=S.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "            UNION ALL\n" + //
+                        "            -- Number of cancel transactions\n" + //
+                        "            SELECT T.customer_id AS cid, COUNT(T.transaction_id) AS num_transactions\n" + //
+                        "            FROM transactions T INNER JOIN cancels C ON T.transaction_id=C.transaction_id\n" + //
+                        "            WHERE (T.transaction_date >= TO_DATE ('%s', 'YYYY/MM/DD')) AND (T.transaction_date <= TO_DATE ('%s', 'YYYY/MM/DD'))\n" + //
+                        "            GROUP BY T.customer_id\n" + //
+                        "        ) temp\n" + //
+                        "        GROUP BY temp.cid\n" + //
 
-                                "        UNION ALL\n" + //
+                        "        UNION ALL\n" + //
 
-                                "        -- interest\n" + //
-                                "        SELECT T.customer_id AS cid, SUM(A.amount) AS profit\n" + //
-                                "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
-                                "        GROUP BY T.customer_id\n" + //
+                        "        -- interest\n" + //
+                        "        SELECT T.customer_id AS cid, SUM(A.amount) AS profit\n" + //
+                        "        FROM transactions T INNER JOIN accrueinterests A ON T.transaction_id=A.transaction_id\n" + //
+                        "        GROUP BY T.customer_id\n" + //
 
-                                "    ) finalTable\n" + //
-                                "    GROUP BY finalTable.cid\n" + //
-                                "    HAVING SUM(finalTable.profit) > 10000\n" + //
-                                ") random INNER JOIN Customers C ON random.cid=C.customer_id",
-                                startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate
+                        "    ) finalTable\n" + //
+                        "    GROUP BY finalTable.cid\n" + //
+                        "    HAVING SUM(finalTable.profit) > 10000\n" + //
+                        ") random INNER JOIN Customers C ON random.cid=C.customer_id",
+                        startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate
                     )
                 )
             ) {
@@ -669,7 +782,7 @@ public class ManagerInterface {
         
             }
         } catch (Exception e) {
-            System.out.println("FAILED QUERY: generateCustomerReport");
+            System.out.println("FAILED QUERY: generateDTERReport");
             e.printStackTrace();
             System.exit(1);
         }
