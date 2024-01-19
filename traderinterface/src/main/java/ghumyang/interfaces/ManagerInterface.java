@@ -200,7 +200,7 @@ public class ManagerInterface {
             totalBalance += curBalance * days;
             // Global.messageWithConfirm("ended month at " + dateIterator.toString() + ", " + days + " have elapsed prior to this with balance " + curBalance);
 
-            Double toDeposit = (totalBalance / totalDays) * 0.02;
+            Double toDeposit = (totalBalance / totalDays) * 0.1;
 
             // Global.messageWithConfirm(new String[] {
             //     "totalDays:  " + totalDays,
